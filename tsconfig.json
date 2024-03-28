@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "skipLibCheck": true,
+        "outDir": "dist",
+        "lib": [
+            "ES6",
+            "ES2018.Intl",
+        ],
+        "module": "CommonJS",
+        "target": "ES6",
+    },
+    "include": [
+        "./lib/*",
+    ],
+    "exclude": [
+        "./test/*"
+    ],
+    "typeAcquisition": {
+        "include": [
+            "jest"
+        ]
+    }
+}
