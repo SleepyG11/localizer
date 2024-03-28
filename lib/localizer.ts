@@ -1,23 +1,72 @@
 import parseInterval from 'math-interval-parser';
 import { PrintfFunction, createPrintf } from './printf';
 import { get, isNil, isObjectLike, invert } from './no-lodash';
-import {
-	FallbacksTable,
-	LocalizationData,
-	LocalizationPluralData,
-	LocalizationTable,
-	LocalizeWithCountKeyOptions,
-	LocalizeWithCountRawOptions,
-	LocalizeWithoutCountKeyOptions,
-	LocalizeWithoutCountRawOptions,
-	LocalizerOptions,
-	PluralRules,
-	PluralRulesTable,
-} from '@sleepy.g11/localizer';
-
-const noCachePrintf = createPrintf(false);
 
 // ------------------------
+
+export type PluralCategory = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other';
+export type PluralRules = (count: number, ordinal?: boolean) => PluralCategory;
+
+export interface LocalizationPluralData extends Partial<Record<PluralCategory, string>> {}
+export interface LocalizationRecursiveData extends Record<string, string | LocalizationData> {}
+export type LocalizationData = string | LocalizationPluralData | LocalizationRecursiveData;
+
+export type LocalizationTable<T extends string = string> = Partial<Record<T, Record<string, LocalizationData>>>;
+export type PluralRulesTable<T extends string = string> = Partial<Record<T, PluralRules>>;
+export type FallbacksTable<T extends string = string> = Record<string, T>;
+
+export type LocalizeBaseOptions = {
+	cacheLocalization: boolean;
+	cachePluralRules: boolean;
+	cacheFallbacks: boolean;
+	cachePrintf: boolean;
+
+	intl: boolean;
+	safe: boolean;
+	fallback: string;
+};
+
+export type LocalizeWithoutCountBaseOptions = Partial<LocalizeBaseOptions>;
+export type LocalizeWithoutCountKeyOptions<T extends string = string> = LocalizeWithoutCountBaseOptions & {
+	key: string;
+	locale?: T;
+};
+export type LocalizeWithoutCountRawOptions<T extends string = string> = LocalizeWithoutCountBaseOptions & {
+	raw: LocalizationData;
+};
+
+export type LocalizeWithCountBaseOptions = Partial<
+	LocalizeBaseOptions & {
+		count: number;
+		ordinal: boolean;
+	}
+>;
+export type LocalizeWithCountKeyOptions<T extends string = string> = LocalizeWithCountBaseOptions & {
+	key: string;
+	locale?: T;
+};
+export type LocalizeWithCountRawOptions<T extends string = string> = LocalizeWithCountBaseOptions & {
+	raw: LocalizationData;
+	locale?: T;
+};
+
+export type LocalizerOptions<T extends string = string> = Partial<{
+	safe: boolean;
+	intl: boolean;
+
+	cacheLocalization: boolean;
+	cachePluralRules: boolean;
+	cacheFallbacks: boolean;
+	cachePrintf: boolean;
+
+	defaultLocale: T;
+
+	fallbacks: FallbacksTable<T>;
+	plurals: PluralRulesTable<T>;
+	localization: LocalizationTable<T>;
+}>;
+
+// ----------------------------------
 
 type CacheKey<T extends string = string> = `${T}.${string}` | string;
 type FallbacksArray<T extends string = string> = { regexp: RegExp; fallback: T }[];
@@ -43,9 +92,13 @@ type ProcessOverrideOptions = {
 
 // ----------------------------------
 
+const noCachePrintf = createPrintf(false);
+
 function fallbackPluralSelector(count: number, ordinal: boolean) {
 	return count === 1 ? 'one' : 'other';
 }
+
+// ----------------------------------
 
 export class LocalizerScope<T extends string = string> {
 	localizer: Localizer<T>;
@@ -451,7 +504,7 @@ export default class Localizer<T extends string = string> {
 			override = this.getOverrideOptions({});
 		}
 		if (override.safe) return null;
-		// TODO: Придумать ошибку
+		// TODO: Make it more useful
 		throw new Error('Cannot localize');
 	}
 
@@ -515,7 +568,7 @@ export default class Localizer<T extends string = string> {
 			override = this.getOverrideOptions({});
 		}
 		if (override.safe) return null;
-		// TODO: Придумать ошибку
+		// TODO: Make it more useful
 		throw new Error('Cannot localize');
 	}
 

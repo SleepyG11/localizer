@@ -168,7 +168,7 @@ function convertPlaceholderToken(token: PlaceholderToken, boundValue: any, prese
 
 		// JSON
 		case 'j': {
-			// TODO: посмотреть как у других, решить как реализовать
+			// TODO: Improve
 			return JSON.stringify(boundValue);
 		}
 
