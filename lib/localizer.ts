@@ -11,60 +11,221 @@ export interface LocalizationPluralData extends Partial<Record<PluralCategory, s
 export interface LocalizationRecursiveData extends Record<string, string | LocalizationData> {}
 export type LocalizationData = string | LocalizationPluralData | LocalizationRecursiveData;
 
+/**
+ * Table that contains localization data for locales.
+ *
+ * Data can be:
+ * - string;
+ * - object, which contains:
+ *      - another data;
+ *      - math intervals as part of [ISO 31-11](https://en.wikipedia.org/wiki/ISO_31-11) *("!" in start can be used to invert)*;
+ *      - plural categories defined in [Unicode CLDR](https://cldr.unicode.org/index/cldr-spec/plural-rules);
+ * - other type (will be converted to string).
+ *
+ * `undefined` or `null` are ignored.
+ *
+ * @example
+ * {
+ *      'en-US': {
+ *          greetings: {
+ *              hello: "Hello!",
+ *              forFriends: {
+ *                  hai: "Hai!",
+ *              },
+ *          },
+ *          fish: {
+ *              "![0,]": "Negative fish?!"
+ *              "[0]": "No fish",
+ *              "[1]": "One fish",
+ *              "(4,5)": "More than four and less than five fishes",
+ *              "[,9)": "Less than nine fishes",
+ *              "[10,]": "More than ten fishes",
+ *              "other": "%s fishes"
+ *          },
+ *          cat: {
+ *              "one": "%s cat",
+ *              "[21]": "Twenty one cats",
+ *              "other": "%s cats"
+ *          }
+ *      }
+ * }
+ *
+ */
 export type LocalizationTable<T extends string = string> = Partial<Record<T, Record<string, LocalizationData>>>;
+/**
+ * Table that contains {@link PluralRules} functions for locales.
+ *
+ * This functions have priority over [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules).
+ * @example
+ * {
+ *      'en-US': (count, ordinal = false) => {
+ *          if (ordinal) return count === 2 ? 'two' : count === 1 ? 'one' : 'other';
+ *          return count === 1 ? 'one' : 'other';
+ *      },
+ *      'ru-RU': () => 'other'
+ * }
+ */
 export type PluralRulesTable<T extends string = string> = Partial<Record<T, PluralRules>>;
+/**
+ * Table that contains fallback patterns for locales.
+ *
+ * When localization data for locale not found, next that matches pattern in table (in order they present) will be used. Repeats until data will be found, or fallback to default locale if nothing matches.
+ *
+ * `*` can be used as wildcart in patterns.
+ *
+ * @example
+ * {
+ *   'ua': 'ru-RU',
+ *   'en-*': 'en-US',
+ * }
+ */
 export type FallbacksTable<T extends string = string> = Record<string, T>;
 
-export type LocalizeBaseOptions = {
+type BasicOptions = {
+	/**
+	 * Should use cache for localization data from {@link LocalizationTable}.
+	 *
+	 * Improves speed for already used keys, but can increase memory usage.
+	 * @default true
+	 */
 	cacheLocalization: boolean;
+	/**
+	 * Should use cache for plural rules functions from {@link PluralRulesTable} or [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules).
+	 *
+	 * Improves speed for already used locales, but can increase memory usage.
+	 * @default true
+	 */
 	cachePluralRules: boolean;
+	/**
+	 * Should use cache for fallback locales from {@link FallbacksTable}.
+	 *
+	 * Improves speed for already used keys, but can increase memory usage.
+	 * @default true
+	 */
 	cacheFallbacks: boolean;
+	/**
+	 * Should use cache for patterns insertion.
+	 *
+	 * Improves speed for values with patterns, but can increase memory usage.
+	 * @default true
+	 */
 	cachePrintf: boolean;
 
+	/**
+	 * Use [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) to convert `count` passed to `localizer.ln()` into plural category, when function in {@link PluralRulesTable} not found.
+	 * @default false
+	 */
 	intl: boolean;
+	/**
+	 * Should `localize.l()` and `localize.ln()` return `null` instead of throwing an error when invalid arguments passed.
+	 * @default false
+	 */
 	safe: boolean;
-	fallback: string;
 };
 
-export type LocalizeWithoutCountBaseOptions = Partial<LocalizeBaseOptions>;
-export type LocalizeWithoutCountKeyOptions<T extends string = string> = LocalizeWithoutCountBaseOptions & {
+// ------------------------
+
+type LocalizeBasicOptions = Partial<BasicOptions>;
+type LocalizeBasicCountOptions = {
+	/**
+	 * Number that will be used for resolving math intervals or passed to plural rules function.
+	 * @default 1
+	 */
+	count?: number;
+	/**
+	 * Use 'ordinal' plural rules instead of 'cardinal'.
+	 * @default false
+	 */
+	ordinal?: boolean;
+};
+type LocalizeBasicKeyOptions<T extends string = string> = LocalizeBasicOptions & {
+	/**
+	 * Path to localization data inside of `localization` table.
+	 *
+	 * If data is `undefined` or `null`, it will be treated as missing.
+	 * @example
+	 *  const localizer = new Localizer({
+	 *      localization: {
+	 *          'en-US': {
+	 *              greetings: {
+	 *                  hello: "Hello everyone!", hai: "Hai!"
+	 *              }
+	 *          }
+	 *      }
+	 *  })
+	 *
+	 * localizer.l('en-US', 'greetings.hello'); // "Hello everyone!"
+	 * localizer.l({ locale: "en-US", key: "greetings.hai" }); // "Hai!"
+	 */
 	key: string;
+	/**
+	 * String that will be returned if localization data is missing.
+	 *
+	 * @default key value
+	 */
+	fallback?: string;
+	/**
+	 * Initial locale for localization data from `localization` table and plural rules.
+	 *
+	 * @example
+	 *  const localizer = new Localizer({
+	 *      localization: {
+	 *          'en-US': { greetings: "Hello everyone!" },
+	 *          'ru-RU': { greetings: "Привет всем!" }
+	 *      }
+	 *  })
+	 *
+	 * localizer.l('en-US', 'greetings'); // "Hello everyone!"
+	 * localizer.l({ locale: "ru-RU", key: "greetings" }); // "Привет всем!"
+	 */
 	locale?: T;
 };
-export type LocalizeWithoutCountRawOptions<T extends string = string> = LocalizeWithoutCountBaseOptions & {
-	raw: LocalizationData;
+type LocalizeBasicRawOptions<T extends string = string> = LocalizeBasicOptions & {
+	/**
+	 * Localization data to process.
+	 */
+	raw: string;
+	/**
+	 * String that will be returned if localization data will be processed to invalid value. **Required.**
+	 *
+	 * @default key value
+	 */
+	fallback: string;
+	/**
+	 * Initial locale to use for resolving plural rules.
+	 */
+	locale?: T;
 };
 
-export type LocalizeWithCountBaseOptions = Partial<
-	LocalizeBaseOptions & {
-		count: number;
-		ordinal: boolean;
+export type LocalizeWithoutCountKeyOptions<T extends string = string> = LocalizeBasicKeyOptions<T>;
+export type LocalizeWithoutCountRawOptions<T extends string = string> = Omit<LocalizeBasicRawOptions<T>, 'locale'>;
+
+export type LocalizeWithCountKeyOptions<T extends string = string> = LocalizeBasicKeyOptions<T> & LocalizeBasicCountOptions;
+export type LocalizeWithCountRawOptions<T extends string = string> = LocalizeBasicRawOptions<T> & LocalizeBasicCountOptions;
+
+// ------------------------
+
+export type LocalizerOptions<T extends string = string> = Partial<
+	BasicOptions & {
+		/**
+		 * Locale to use when invalid locale passed or not found in `fallbacks` table.
+		 */
+		defaultLocale: T;
+
+		/**
+		 * See {@link LocalizationTable}
+		 */
+		localization: LocalizationTable<T>;
+		/**
+		 * See {@link FallbacksTable}
+		 */
+		fallbacks: FallbacksTable<T>;
+		/**
+		 * See {@link PluralRulesTable}
+		 */
+		pluralRules: PluralRulesTable<T>;
 	}
 >;
-export type LocalizeWithCountKeyOptions<T extends string = string> = LocalizeWithCountBaseOptions & {
-	key: string;
-	locale?: T;
-};
-export type LocalizeWithCountRawOptions<T extends string = string> = LocalizeWithCountBaseOptions & {
-	raw: LocalizationData;
-	locale?: T;
-};
-
-export type LocalizerOptions<T extends string = string> = Partial<{
-	safe: boolean;
-	intl: boolean;
-
-	cacheLocalization: boolean;
-	cachePluralRules: boolean;
-	cacheFallbacks: boolean;
-	cachePrintf: boolean;
-
-	defaultLocale: T;
-
-	fallbacks: FallbacksTable<T>;
-	plurals: PluralRulesTable<T>;
-	localization: LocalizationTable<T>;
-}>;
 
 // ----------------------------------
 
@@ -160,14 +321,14 @@ export default class Localizer<T extends string = string> {
 
 	private _defaultLocale: T;
 
-	private _localization: Readonly<LocalizationTable<T>>;
+	private _localization: LocalizationTable<T>;
 	private _localizationCache: Map<CacheKey, LocalizationData> = new Map();
 
-	private _fallbacks: Readonly<FallbacksTable<T>>;
+	private _fallbacks: FallbacksTable<T>;
 	private _fallbacksArray: FallbacksArray<T>;
 	private _fallbacksCache: Map<CacheKey, T> = new Map();
 
-	private _plurals: Readonly<PluralRulesTable<T>>;
+	private _plurals: PluralRulesTable<T>;
 	private _pluralsCache: Map<string, PluralRules> = new Map();
 
 	private _printf: PrintfFunction;
@@ -219,14 +380,6 @@ export default class Localizer<T extends string = string> {
 		return true;
 	}
 
-	private getOverrideOptions(options: any): ProcessOverrideOptions {
-		let result = {};
-		for (let key of ['safe', 'intl', 'cacheLocalization', 'cachePluralRules', 'cacheFallbacks', 'cachePrintf']) {
-			result[key] = key in options ? options[key] : this[key];
-		}
-		return result;
-	}
-
 	constructor(options?: LocalizerOptions<T>) {
 		this._safe = Boolean(get(options, 'safe', false));
 		this._intl = Boolean(get(options, 'intl', false));
@@ -239,10 +392,15 @@ export default class Localizer<T extends string = string> {
 		Localizer.setDefaultLocale(this, get(options, 'defaultLocale', null));
 		Localizer.setLocalization(this, get(options, 'localization', {}) as LocalizationTable<T>);
 		Localizer.setFallbacks(this, get(options, 'fallbacks', {}) as FallbacksTable<T>);
-		Localizer.setPlurals(this, get(options, 'plurals', {}) as PluralRulesTable<T>);
+		Localizer.setPlurals(this, get(options, 'pluralRules', {}) as PluralRulesTable<T>);
 		Localizer.setFallbacksArray(this);
 	}
 
+	/**
+	 * Locale to use when invalid locale passed or not found in `fallbacks` table.
+	 *
+	 * Can be set (will purge fallbacks cache).
+	 */
 	get defaultLocale() {
 		return this._defaultLocale;
 	}
@@ -250,6 +408,11 @@ export default class Localizer<T extends string = string> {
 		if (Localizer.setDefaultLocale(this, value)) this._fallbacksCache.clear();
 	}
 
+	/**
+	 * Should `localize.l()` and `localize.ln()` return `null` instead of throwing an error when invalid arguments passed.
+	 *
+	 * Can be set.
+	 */
 	get safe() {
 		return this._safe;
 	}
@@ -257,6 +420,13 @@ export default class Localizer<T extends string = string> {
 		this._safe = Boolean(value);
 	}
 
+	/**
+	 * Should use cache for localization data from {@link LocalizationTable}.
+	 *
+	 * Improves speed for already used keys, but can increase memory usage.
+	 *
+	 * Can be set (will purge localization cache).
+	 */
 	get cacheLocalization() {
 		return this._cacheLocalization;
 	}
@@ -264,6 +434,13 @@ export default class Localizer<T extends string = string> {
 		this._cacheLocalization = Boolean(value);
 		this._localizationCache.clear();
 	}
+	/**
+	 * Should use cache for plural rules functions from {@link PluralRulesTable} or [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules).
+	 *
+	 * Improves speed for already used locales, but can increase memory usage.
+	 *
+	 * Can be set (will purge plural rules cache).
+	 */
 	get cachePluralRules() {
 		return this._cachePluralRules;
 	}
@@ -271,6 +448,13 @@ export default class Localizer<T extends string = string> {
 		this._cachePluralRules = Boolean(value);
 		this._pluralsCache.clear();
 	}
+	/**
+	 * Should use cache for fallback locales from {@link FallbacksTable}.
+	 *
+	 * Improves speed for already used keys, but can increase memory usage.
+	 *
+	 * Can be set (will purge fallbacks cache).
+	 */
 	get cacheFallbacks() {
 		return this._cacheFallbacks;
 	}
@@ -278,6 +462,13 @@ export default class Localizer<T extends string = string> {
 		this._cacheFallbacks = Boolean(value);
 		this._fallbacksCache.clear();
 	}
+	/**
+	 * Should use cache for patterns insertion.
+	 *
+	 * Improves speed for values with patterns, but can increase memory usage.
+	 *
+	 * Can be set (will purge printf cache).
+	 */
 	get cachePrintf() {
 		return this._cachePrintf;
 	}
@@ -286,6 +477,11 @@ export default class Localizer<T extends string = string> {
 		this._printf.cache = {};
 	}
 
+	/**
+	 * Use [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) to convert `count` passed to `localizer.ln()` into plural category, when function in {@link PluralRulesTable} not found.
+	 *
+	 * Can be set (will purge plural rules cache).
+	 */
 	get intl() {
 		return this._intl;
 	}
@@ -294,6 +490,11 @@ export default class Localizer<T extends string = string> {
 		this._pluralsCache.clear();
 	}
 
+	/**
+	 * See {@link FallbacksTable}
+	 *
+	 * Can be set (will purge fallbacks cache).
+	 */
 	get fallbacks() {
 		return this._fallbacks;
 	}
@@ -301,32 +502,56 @@ export default class Localizer<T extends string = string> {
 		if (Localizer.setFallbacks(this, value as FallbacksTable<T>)) this._fallbacksCache.clear();
 	}
 
+	/**
+	 * See {@link LocalizationTable}
+	 *
+	 * Can be set (will purge localization abd fallbacks cache).
+	 */
 	get localization() {
 		return this._localization;
 	}
 	set localization(value: LocalizationTable<T>) {
-		if (Localizer.setLocalization(this, value as LocalizationTable<T>)) this._localizationCache.clear();
+		if (Localizer.setLocalization(this, value as LocalizationTable<T>)) {
+			this._localizationCache.clear();
+			this._fallbacksCache.clear();
+		}
 	}
 
-	get plurals() {
+	/**
+	 * See {@link PluralRulesTable}
+	 *
+	 * Can be set (will purge plural rules cache).
+	 */
+	get pluralRules() {
 		return this._plurals;
 	}
-	set plurals(value: PluralRulesTable<T>) {
+	set pluralRules(value: PluralRulesTable<T>) {
 		if (Localizer.setPlurals(this, value as PluralRulesTable<T>)) this._pluralsCache.clear();
 	}
 
 	// -----------------
 
+	/**
+	 * Check is locale present in {@link LocalizationTable}.
+	 */
 	hasLocale(locale: T): boolean {
 		return locale in this._localization;
 	}
 
 	// -----------------
 
+	private getOverrideOptions(options: any): ProcessOverrideOptions {
+		let result = {};
+		for (let key of ['safe', 'intl', 'cacheLocalization', 'cachePluralRules', 'cacheFallbacks', 'cachePrintf']) {
+			result[key] = Boolean(key in options ? options[key] : this[key]);
+		}
+		return result;
+	}
+
 	private getKey(locale: T, key: string): CacheKey {
 		return (locale + '.' + key) as CacheKey;
 	}
-	resolveKey(locale: T, key: string, override: ProcessOverrideOptions): LocalizationData {
+	private search(locale: T, key: string, override: ProcessOverrideOptions): { locale: T; value: LocalizationData | null } {
 		let isDefaultLocale = false;
 		// Input
 		if (typeof locale !== 'string') {
@@ -338,12 +563,19 @@ export default class Localizer<T extends string = string> {
 		let resultLocale = (override.cacheFallbacks && !isDefaultLocale ? this._fallbacksCache.get(startKey) : null) ?? locale;
 		// If cache data present - return it
 		let resultKey = this.getKey(resultLocale, key);
-		if (override.cacheLocalization && this._localizationCache.has(resultKey)) return this._localizationCache.get(resultKey);
+		if (override.cacheLocalization && this._localizationCache.has(resultKey))
+			return {
+				locale: resultLocale,
+				value: this._localizationCache.get(resultKey),
+			};
 		// If localization data present - cache and return it
 		let result = get(this._localization, resultKey);
 		if (!isNil(result)) {
 			if (override.cacheLocalization) this._localizationCache.set(resultKey, result);
-			return result;
+			return {
+				locale: resultLocale,
+				value: result,
+			};
 		}
 		if (!isDefaultLocale) {
 			// Start fallback calculation
@@ -355,13 +587,19 @@ export default class Localizer<T extends string = string> {
 					if (!isNil(result)) {
 						if (override.cacheFallbacks) this._fallbacksCache.set(startKey, resultLocale);
 						if (override.cacheLocalization) this._localizationCache.set(resultKey, result);
-						return result;
+						return {
+							locale: resultLocale,
+							value: result,
+						};
 					}
 				}
 			}
 		}
 		if (override.cacheLocalization) this._localizationCache.set(startKey, null);
-		return null;
+		return {
+			locale,
+			value: null,
+		};
 	}
 
 	// -----------------
@@ -467,16 +705,18 @@ export default class Localizer<T extends string = string> {
 		if (typeof localeOrOptions === 'string') {
 			override = this.getOverrideOptions({});
 			let key = args.shift();
-			if (typeof key === 'string')
+			if (typeof key === 'string') {
+				let result = this.search(localeOrOptions, key, override);
 				return this.process(
 					{
-						locale: localeOrOptions,
-						data: this.resolveKey(localeOrOptions, key, override),
+						locale: result.locale,
+						data: result.value,
 						fallback: key,
 						args,
 					},
 					override
 				);
+			}
 		} else if (isObjectLike(localeOrOptions)) {
 			override = this.getOverrideOptions(localeOrOptions);
 			if ('raw' in localeOrOptions) {
@@ -490,16 +730,18 @@ export default class Localizer<T extends string = string> {
 						},
 						override
 					);
-			} else if (typeof localeOrOptions.key === 'string')
+			} else if (typeof localeOrOptions.key === 'string') {
+				let result = this.search(localeOrOptions.locale, localeOrOptions.key, override);
 				return this.process(
 					{
-						locale: localeOrOptions.locale,
-						data: this.resolveKey(localeOrOptions.locale, localeOrOptions.key, override),
+						locale: result.locale,
+						data: result.value,
 						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
 						args,
 					},
 					override
 				);
+			}
 		} else {
 			override = this.getOverrideOptions({});
 		}
@@ -518,10 +760,11 @@ export default class Localizer<T extends string = string> {
 			let key = args.shift();
 			if (typeof key === 'string') {
 				let count = args.length ? Number(args.shift()) : 1;
+				let result = this.search(localeOrOptions, key, override);
 				return this.processWithCount(
 					{
-						locale: localeOrOptions,
-						data: this.resolveKey(localeOrOptions, key, override),
+						locale: result.locale,
+						data: result.value,
 						fallback: key,
 						args,
 					},
@@ -540,7 +783,7 @@ export default class Localizer<T extends string = string> {
 						{
 							locale: localeOrOptions.locale,
 							data: localeOrOptions.raw,
-							fallback: String(localeOrOptions.fallback),
+							fallback: localeOrOptions.fallback,
 							args,
 						},
 						{
@@ -550,11 +793,12 @@ export default class Localizer<T extends string = string> {
 						override
 					);
 			} else if (typeof localeOrOptions.key === 'string') {
+				let result = this.search(localeOrOptions.locale, localeOrOptions.key, override);
 				return this.processWithCount(
 					{
-						locale: localeOrOptions.locale,
-						data: this.resolveKey(localeOrOptions.locale, localeOrOptions.key, override),
-						fallback: String(localeOrOptions.fallback ?? localeOrOptions.key),
+						locale: result.locale,
+						data: result.value,
+						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
 						args,
 					},
 					{

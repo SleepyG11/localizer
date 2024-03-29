@@ -5,7 +5,7 @@ describe('Localizer class', () => {
 		it.each([undefined, null])('When empty argument passed, data should be not null', (opt) => {
 			let localizer = new Localizer(opt);
 			expect(localizer.localization).toBeInstanceOf(Object);
-			expect(localizer.plurals).toBeInstanceOf(Object);
+			expect(localizer.pluralRules).toBeInstanceOf(Object);
 			expect(localizer.fallbacks).toBeInstanceOf(Object);
 			expect(localizer.cacheLocalization).toBe(true);
 			expect(localizer.cacheFallbacks).toBe(true);
@@ -17,7 +17,7 @@ describe('Localizer class', () => {
 		it.each([1, 'true', []])('When invalid argument passed, data should be not null', (opt) => {
 			let localizer = new Localizer(opt);
 			expect(localizer.localization).toBeInstanceOf(Object);
-			expect(localizer.plurals).toBeInstanceOf(Object);
+			expect(localizer.pluralRules).toBeInstanceOf(Object);
 			expect(localizer.fallbacks).toBeInstanceOf(Object);
 			expect(localizer.cacheLocalization).toBe(true);
 			expect(localizer.cacheFallbacks).toBe(true);
@@ -27,15 +27,15 @@ describe('Localizer class', () => {
 			expect(localizer.safe).toBe(false);
 		});
 		it.each([undefined, null])('When object with empty values passed, data should be not null', (opt) => {
-			let localizer = new Localizer({ fallbacks: opt, localization: opt, plurals: opt });
+			let localizer = new Localizer({ fallbacks: opt, localization: opt, pluralRules: opt });
 			expect(localizer.localization).toBeInstanceOf(Object);
-			expect(localizer.plurals).toBeInstanceOf(Object);
+			expect(localizer.pluralRules).toBeInstanceOf(Object);
 			expect(localizer.fallbacks).toBeInstanceOf(Object);
 		});
 		it.each([1, 'true', []])('When object with invalid values passed, data should be not null', (opt) => {
-			let localizer = new Localizer({ fallbacks: opt, localization: opt, plurals: opt });
+			let localizer = new Localizer({ fallbacks: opt, localization: opt, pluralRules: opt });
 			expect(localizer.localization).toBeInstanceOf(Object);
-			expect(localizer.plurals).toBeInstanceOf(Object);
+			expect(localizer.pluralRules).toBeInstanceOf(Object);
 			expect(localizer.fallbacks).toBeInstanceOf(Object);
 		});
 		it.each([1, 'true', []])('When anything except boolean passed to cache, intl or safe, it should be converted to boolean', (opt) => {
@@ -221,7 +221,7 @@ describe('Localizer class', () => {
 		});
 		it('When plural function defined, it should return form according to this function', () => {
 			let localizer = new Localizer({
-				plurals: {
+				pluralRules: {
 					'en-US': (count, ordinal) => {
 						if (!ordinal) {
 							switch (count) {
