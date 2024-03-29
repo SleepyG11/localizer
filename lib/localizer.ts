@@ -128,34 +128,35 @@ type BasicOptions = {
 type LocalizeBasicOptions = Partial<BasicOptions>;
 type LocalizeBasicCountOptions = {
 	/**
-	 * Number that will be used for resolving math intervals or passed to plural rules function.
+	 * Number that will be used for resolving math intervals or passed to {@link PluralRules} function.
 	 * @default 1
 	 */
 	count?: number;
 	/**
-	 * Use 'ordinal' plural rules instead of 'cardinal'.
+	 * Use `ordinal` plural rules instead of `cardinal`.
 	 * @default false
 	 */
 	ordinal?: boolean;
 };
 type LocalizeBasicKeyOptions<T extends string = string> = LocalizeBasicOptions & {
 	/**
-	 * Path to localization data inside of `localization` table.
+	 * Path to localization data inside of {@link LocalizationTable}.
 	 *
-	 * If data is `undefined` or `null`, it will be treated as missing.
+	 * `undefined` or `null` are ignored.
 	 * @example
 	 *  const localizer = new Localizer({
 	 *      localization: {
 	 *          'en-US': {
 	 *              greetings: {
-	 *                  hello: "Hello everyone!", hai: "Hai!"
+	 *                  hello: "Hello world!",
+	 *                  hai: "Hai world!"
 	 *              }
 	 *          }
 	 *      }
 	 *  })
 	 *
-	 * localizer.l('en-US', 'greetings.hello'); // "Hello everyone!"
-	 * localizer.l({ locale: "en-US", key: "greetings.hai" }); // "Hai!"
+	 * localizer.l('en-US', 'greetings.hello'); // "Hello world!"
+	 * localizer.l({ locale: "en-US", key: "greetings.hai" }); // "Hai world!"
 	 */
 	key: string;
 	/**
@@ -165,28 +166,28 @@ type LocalizeBasicKeyOptions<T extends string = string> = LocalizeBasicOptions &
 	 */
 	fallback?: string;
 	/**
-	 * Initial locale for localization data from `localization` table and plural rules.
+	 * Initial locale for localization data from {@link LocalizationTable} and plural rules.
 	 *
 	 * @example
 	 *  const localizer = new Localizer({
 	 *      localization: {
-	 *          'en-US': { greetings: "Hello everyone!" },
-	 *          'ru-RU': { greetings: "Привет всем!" }
+	 *          'en-US': { greeting: "Hello world!" },
+	 *          'ru-RU': { greeting: "Привет мир!" }
 	 *      }
 	 *  })
 	 *
-	 * localizer.l('en-US', 'greetings'); // "Hello everyone!"
-	 * localizer.l({ locale: "ru-RU", key: "greetings" }); // "Привет всем!"
+	 * localizer.l('en-US', 'greeting'); // "Hello world!"
+	 * localizer.l({ locale: "ru-RU", key: "greeting" }); // "Привет мир!"
 	 */
 	locale?: T;
 };
 type LocalizeBasicRawOptions<T extends string = string> = LocalizeBasicOptions & {
 	/**
-	 * Localization data to process.
+	 * Localization data to process. See {@link LocalizationTable} for more info.
 	 */
-	raw: string;
+	raw: LocalizationData;
 	/**
-	 * String that will be returned if localization data will be processed to invalid value. **Required.**
+	 * String that will be returned if localization data invalid. **Required.**
 	 *
 	 * @default key value
 	 */
