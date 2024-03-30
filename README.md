@@ -207,7 +207,10 @@ localizer.insert('%s, %s and %s', 'One', 'Two', 'Three') // -> One, Two and Thre
 localizer.insert('%2$s, %3$s and %1$s', 'One', 'Two', 'Three') // -> Two, Three and One
 
 // Insert values from object
-localizer.insert('%(first)s, %(second)s and %(third)s', { first: "fish", second: 'cat', third: "fox" }) // -> fish, cat and fox
+localizer.insert(
+    '%(first)s, %(second)s and %(third)s',
+    { first: "fish", second: 'cat', third: "fox" }
+) // -> fish, cat and fox
 
 // Combined
 localizer.insert(
@@ -264,5 +267,3 @@ If value is function, in will be called without arguments and returned value wil
 localizer.insert('%s', () => new Date())
 localizer.insert('%(date)s', { date: () => new Date() })
 ```
-
-
