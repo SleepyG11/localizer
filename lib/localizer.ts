@@ -290,6 +290,12 @@ export class LocalizerScope<T extends string = string> {
 	constructor(localizer: Localizer<T>, locale: T) {
 		this.localizer = localizer;
 		this.locale = locale;
+
+		let self = this;
+		this.l = (...args) => LocalizerScope.prototype.l.apply(self, args);
+		this.ln = (...args) => LocalizerScope.prototype.ln.apply(self, args);
+		this.insert = (...args) => LocalizerScope.prototype.insert.apply(self, args);
+		this.scope = (...args) => LocalizerScope.prototype.scope.apply(self, args);
 	}
 
 	l(key: string, ...args: any[]): string;
@@ -306,6 +312,10 @@ export class LocalizerScope<T extends string = string> {
 	ln(keyOrOptions: string | LocalizeWithCountKeyOptions | LocalizeWithCountRawOptions, ...args: any[]): string {
 		let [resultOptions, resultArgs] = LocalizerScope.insertLocaleInOptions(this.locale, true, keyOrOptions, args);
 		return this.localizer.ln(resultOptions, ...resultArgs);
+	}
+
+	insert(raw: string, ...args: any[]) {
+		return this.localizer.insert(raw, ...args);
 	}
 
 	scope(locale: T): LocalizerScope {
@@ -395,6 +405,12 @@ export default class Localizer<T extends string = string> {
 		Localizer.setFallbacks(this, get(options, 'fallbacks', {}) as FallbacksTable<T>);
 		Localizer.setPlurals(this, get(options, 'pluralRules', {}) as PluralRulesTable<T>);
 		Localizer.setFallbacksArray(this);
+
+		let self = this;
+		this.l = (...args) => Localizer.prototype.l.apply(self, args);
+		this.ln = (...args) => Localizer.prototype.ln.apply(self, args);
+		this.insert = (...args) => Localizer.prototype.insert.apply(self, args);
+		this.scope = (...args) => Localizer.prototype.scope.apply(self, args);
 	}
 
 	/**
