@@ -168,8 +168,11 @@ function convertPlaceholderToken(token: PlaceholderToken, boundValue: any, prese
 
 		// JSON
 		case 'j': {
-			// TODO: Improve
-			return JSON.stringify(boundValue);
+			try {
+				return JSON.stringify(boundValue, (_, v) => (typeof v === 'bigint' ? v.toString() : v));
+			} catch (e) {
+				return '[Circular]';
+			}
 		}
 
 		// String

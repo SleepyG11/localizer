@@ -14,7 +14,7 @@
         "test": "jest tests"
     },
     "name": "@sleepyg11/localizer",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Module for localization",
     "repository": {
         "type": "git",

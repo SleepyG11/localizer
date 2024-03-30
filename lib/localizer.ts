@@ -187,11 +187,11 @@ type LocalizeBasicRawOptions<T extends string = string> = LocalizeBasicOptions &
 	 */
 	raw: LocalizationData;
 	/**
-	 * String that will be returned if localization data invalid. **Required.**
+	 * String that will be returned if localization data invalid. **Required** when raw is object.
 	 *
 	 * @default key value
 	 */
-	fallback: string;
+	fallback?: string;
 	/**
 	 * Initial locale to use for resolving plural rules.
 	 */
@@ -698,6 +698,11 @@ export default class Localizer<T extends string = string> {
 
 	// -----------------
 
+	insert(raw: string, ...args: any[]) {
+		const [namedValues, otherArgs] = this.parseArgv(args);
+		return this.renderPrintf(String(raw), namedValues, otherArgs, this.getOverrideOptions({}));
+	}
+
 	l(locale: T, key: string, ...args: any[]): string;
 	l(options: LocalizeWithoutCountKeyOptions<T>, ...args: any[]): string;
 	l(options: LocalizeWithoutCountRawOptions<T>, ...args: any[]): string;
@@ -721,7 +726,7 @@ export default class Localizer<T extends string = string> {
 		} else if (isObjectLike(localeOrOptions)) {
 			override = this.getOverrideOptions(localeOrOptions);
 			if ('raw' in localeOrOptions) {
-				if (!isNil(localeOrOptions.fallback))
+				if (!isObjectLike(localeOrOptions.raw) || !isNil(localeOrOptions.fallback))
 					return this.process(
 						{
 							locale: null,
@@ -737,7 +742,7 @@ export default class Localizer<T extends string = string> {
 					{
 						locale: result.locale,
 						data: result.value,
-						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
+						fallback: localeOrOptions.fallback,
 						args,
 					},
 					override
@@ -779,7 +784,7 @@ export default class Localizer<T extends string = string> {
 		} else if (isObjectLike(localeOrOptions)) {
 			override = this.getOverrideOptions(localeOrOptions);
 			if ('raw' in localeOrOptions) {
-				if (!isNil(localeOrOptions.fallback))
+				if (!isObjectLike(localeOrOptions.raw) || !isNil(localeOrOptions.fallback))
 					return this.processWithCount(
 						{
 							locale: localeOrOptions.locale,
@@ -799,7 +804,7 @@ export default class Localizer<T extends string = string> {
 					{
 						locale: result.locale,
 						data: result.value,
-						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
+						fallback: localeOrOptions.fallback,
 						args,
 					},
 					{
