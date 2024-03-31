@@ -98,12 +98,12 @@ describe('Localizer class', () => {
 			expect(localizer.l('en-US', 'key1')).toBe('key1');
 			expect(localizer.ln('en-US', 'key1')).toBe('key1');
 			expect(localizer.l({ raw: undefined, fallback: 'key1' })).toBe('key1');
-			expect(localizer.ln({ locale: 'en-US', raw: undefined, fallback: 'no.key' })).toBe('no.key');
+			expect(localizer.ln({ raw: undefined, fallback: 'no.key' })).toBe('no.key');
 
 			expect(localizer.l('en-US', 'key2')).toBe('key2');
 			expect(localizer.ln('en-US', 'key2')).toBe('key2');
 			expect(localizer.l({ raw: null, fallback: 'key2' })).toBe('key2');
-			expect(localizer.ln({ locale: 'en-US', raw: null, fallback: 'key2' })).toBe('key2');
+			expect(localizer.ln({ raw: null, fallback: 'key2' })).toBe('key2');
 		});
 		it('When value is not object or string, l() and ln() should return value as string', () => {
 			let localizer = new Localizer({
@@ -123,7 +123,7 @@ describe('Localizer class', () => {
 			expect(localizer.l('en-US', '2')).toBe('false');
 			expect(localizer.ln('en-US', '2')).toBe('false');
 			expect(localizer.l({ raw: false, fallback: 'key1' })).toBe('false');
-			expect(localizer.ln({ locale: 'en-US', raw: false, fallback: 'no.key' })).toBe('false');
+			expect(localizer.ln({ raw: false, fallback: 'no.key' })).toBe('false');
 		});
 		it('When value is string, l() and ln() should return value', () => {
 			let localizer = new Localizer({
@@ -137,34 +137,24 @@ describe('Localizer class', () => {
 			expect(localizer.l('en-US', 'key')).toBe('Value');
 			expect(localizer.ln('en-US', 'key')).toBe('Value');
 			expect(localizer.l({ raw: 'Value', fallback: 'key' })).toBe('Value');
-			expect(localizer.ln({ locale: 'en-US', raw: 'Value', fallback: 'key' })).toBe('Value');
+			expect(localizer.ln({ raw: 'Value', fallback: 'key' })).toBe('Value');
 		});
-		it('When value is object, l() and ln() should return "one" or "other" form', () => {
+		it('When value is object, l() and ln() should return "other" form', () => {
 			let first = {
-				one: 'First One',
 				other: 'First Other',
-			};
-			let second = {
-				other: 'Second Other',
 			};
 			let localizer = new Localizer({
 				localization: {
 					'en-US': {
 						first,
-						second,
 					},
 				},
 			});
 
-			expect(localizer.l('en-US', 'first')).toBe('First One');
-			expect(localizer.ln('en-US', 'first')).toBe('First One');
-			expect(localizer.l({ raw: first, fallback: 'no.key' })).toBe('First One');
-			expect(localizer.ln({ locale: 'en-US', raw: first, fallback: 'no.key' })).toBe('First One');
-
-			expect(localizer.l('en-US', 'second')).toBe('Second Other');
-			expect(localizer.ln('en-US', 'second')).toBe('Second Other');
-			expect(localizer.l({ raw: second, fallback: 'no.key' })).toBe('Second Other');
-			expect(localizer.ln({ locale: 'en-US', raw: second, fallback: 'no.key' })).toBe('Second Other');
+			expect(localizer.l('en-US', 'first')).toBe('First Other');
+			expect(localizer.ln('en-US', 'first')).toBe('First Other');
+			expect(localizer.l({ raw: first, fallback: 'no.key' })).toBe('First Other');
+			expect(localizer.ln({ raw: first, fallback: 'no.key' })).toBe('First Other');
 		});
 	});
 	describe('Getting key with count', () => {
@@ -195,7 +185,7 @@ describe('Localizer class', () => {
 			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 2, ordinal: true })).toBe('Not three');
 			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 3, ordinal: true })).toBe('Not two');
 		});
-		it('When plural function not defined, it should return "one" (count=1) or "other" form', () => {
+		it('When plural function not defined, it should return "other" form', () => {
 			let localizer = new Localizer({
 				localization: {
 					'en-US': {
@@ -210,14 +200,12 @@ describe('Localizer class', () => {
 				},
 			});
 			expect(localizer.ln('en-US', 'key', 0)).toBe('Other');
-			expect(localizer.ln('en-US', 'key', 1)).toBe('One');
+			expect(localizer.ln('en-US', 'key', 1)).toBe('Other');
 			expect(localizer.ln('en-US', 'key', 2)).toBe('Other');
-			expect(localizer.ln('en-US', 'key', 3)).toBe('Other');
 
 			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 0, ordinal: true })).toBe('Other');
-			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 1, ordinal: true })).toBe('One');
+			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 1, ordinal: true })).toBe('Other');
 			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 2, ordinal: true })).toBe('Other');
-			expect(localizer.ln({ locale: 'en-US', key: 'key', count: 3, ordinal: true })).toBe('Other');
 		});
 		it('When plural function defined, it should return form according to this function', () => {
 			let localizer = new Localizer({

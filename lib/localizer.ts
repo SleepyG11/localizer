@@ -6,6 +6,7 @@ import { get, isNil, isObjectLike, invert } from './no-lodash';
 
 export type PluralCategory = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other';
 export type PluralRules = (count: number, ordinal?: boolean) => PluralCategory;
+type SelectedPluralRules = (count: number) => PluralCategory;
 
 export interface LocalizationPluralData extends Partial<Record<PluralCategory, string>> {}
 export interface LocalizationRecursiveData extends Record<string, string | LocalizationData> {}
@@ -256,11 +257,13 @@ type ProcessOverrideOptions = {
 
 const noCachePrintf = createPrintf(false);
 
-function fallbackPluralSelector(count: number, ordinal: boolean) {
-	return count === 1 ? 'one' : 'other';
+function fallbackPluralSelector(count: number, ordinal?: boolean): PluralCategory {
+	return 'other';
 }
 
 // ----------------------------------
+
+export const printf = noCachePrintf;
 
 export class LocalizerScope<T extends string = string> {
 	localizer: Localizer<T>;
@@ -294,7 +297,6 @@ export class LocalizerScope<T extends string = string> {
 		let self = this;
 		this.l = (...args) => LocalizerScope.prototype.l.apply(self, args);
 		this.ln = (...args) => LocalizerScope.prototype.ln.apply(self, args);
-		this.insert = (...args) => LocalizerScope.prototype.insert.apply(self, args);
 		this.scope = (...args) => LocalizerScope.prototype.scope.apply(self, args);
 	}
 
@@ -312,10 +314,6 @@ export class LocalizerScope<T extends string = string> {
 	ln(keyOrOptions: string | LocalizeWithCountKeyOptions | LocalizeWithCountRawOptions, ...args: any[]): string {
 		let [resultOptions, resultArgs] = LocalizerScope.insertLocaleInOptions(this.locale, true, keyOrOptions, args);
 		return this.localizer.ln(resultOptions, ...resultArgs);
-	}
-
-	insert(raw: string, ...args: any[]) {
-		return this.localizer.insert(raw, ...args);
 	}
 
 	scope(locale: T): LocalizerScope {
@@ -409,7 +407,6 @@ export default class Localizer<T extends string = string> {
 		let self = this;
 		this.l = (...args) => Localizer.prototype.l.apply(self, args);
 		this.ln = (...args) => Localizer.prototype.ln.apply(self, args);
-		this.insert = (...args) => Localizer.prototype.insert.apply(self, args);
 		this.scope = (...args) => Localizer.prototype.scope.apply(self, args);
 	}
 
@@ -621,20 +618,25 @@ export default class Localizer<T extends string = string> {
 
 	// -----------------
 
-	private setPluralToCache(locale: T, ordinal: boolean = false, func: PluralRules, override: ProcessOverrideOptions): PluralRules {
+	private setPluralToCache(
+		locale: T,
+		ordinal: boolean = false,
+		func: SelectedPluralRules,
+		override: ProcessOverrideOptions
+	): SelectedPluralRules {
 		if (override.cachePluralRules) this._pluralsCache.set(locale + ':' + (ordinal ? '1' : '0'), func);
 		return func;
 	}
 
-	private getPluralFromCache(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): PluralRules | null {
+	private getPluralFromCache(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): SelectedPluralRules | null {
 		return override.cachePluralRules ? this._pluralsCache.get(locale + ':' + (ordinal ? '1' : '0')) : null;
 	}
-	private getPluralFromTable(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): PluralRules | null {
+	private getPluralFromTable(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): SelectedPluralRules | null {
 		let func = this._plurals[locale];
 		if (typeof func !== 'function') return null;
 		return this.setPluralToCache(locale, ordinal, (count: number) => func(count, ordinal), override);
 	}
-	private getPluralFromIntl(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): PluralRules | null {
+	private getPluralFromIntl(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): SelectedPluralRules | null {
 		if (!override.intl) return null;
 		try {
 			let intl = new Intl.PluralRules(locale, { type: ordinal ? 'ordinal' : 'cardinal' });
@@ -643,24 +645,15 @@ export default class Localizer<T extends string = string> {
 			return null;
 		}
 	}
-	private getPluralFallback(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): PluralRules {
+	private getPluralFallback(locale: T, ordinal: boolean = false, override: ProcessOverrideOptions): SelectedPluralRules {
 		if (!locale) return (count: number) => fallbackPluralSelector(count, ordinal);
 		return this.setPluralToCache(locale, ordinal, fallbackPluralSelector, override);
 	}
 
 	// -----------------
 
-	private renderPrintf(msg: string, namedValues: any, args: any[], override: ProcessOverrideOptions): string {
-		if (!/%/.test(msg)) return msg;
-		if (!Object.keys(namedValues).length && !args.length) return msg;
-		return (override.cachePrintf ? this._printf : noCachePrintf)(msg, namedValues, ...args.map((arg) => (isNil(arg) ? 'null' : arg)));
-	}
-	private argsEndWithNamedObject(args: any[]): boolean {
-		return args.length && isObjectLike(args[args.length - 1]);
-	}
-	private parseArgv(args: any[]) {
-		if (this.argsEndWithNamedObject(args)) return [args[args.length - 1], args.slice(0, -1)];
-		return [{}, args.slice()];
+	private renderPrintf(msg: string, args: any[], override: ProcessOverrideOptions): string {
+		return (override.cachePrintf ? this._printf : noCachePrintf)(msg, ...args.map((arg) => (isNil(arg) ? 'null' : arg)));
 	}
 	private matchInterval(count: number, str: string): boolean {
 		let inverted = false;
@@ -685,8 +678,7 @@ export default class Localizer<T extends string = string> {
 			input.data = (input.data as LocalizationPluralData).one ?? (input.data as LocalizationPluralData).other;
 		}
 		if (isNil(input.data)) return String(input.fallback);
-		const [namedValues, otherArgs] = this.parseArgv(input.args);
-		return this.renderPrintf(String(input.data), namedValues, otherArgs, override);
+		return this.renderPrintf(String(input.data), input.args, override);
 	}
 	private processWithCount(input: ProcessDataOptions<T>, plural: ProcessPluralOptions, override: ProcessOverrideOptions): string {
 		if (isObjectLike(input.data)) {
@@ -708,16 +700,10 @@ export default class Localizer<T extends string = string> {
 			}
 		}
 		if (isNil(input.data)) return String(input.fallback);
-		const [namedValues, otherArgs] = this.parseArgv(input.args);
-		return this.renderPrintf(String(input.data), namedValues, [plural.count, ...otherArgs], override);
+		return this.renderPrintf(String(input.data), [plural.count, ...input.args], override);
 	}
 
 	// -----------------
-
-	insert(raw: string, ...args: any[]) {
-		const [namedValues, otherArgs] = this.parseArgv(args);
-		return this.renderPrintf(String(raw), namedValues, otherArgs, this.getOverrideOptions({}));
-	}
 
 	l(locale: T, key: string, ...args: any[]): string;
 	l(options: LocalizeWithoutCountKeyOptions<T>, ...args: any[]): string;
@@ -758,7 +744,7 @@ export default class Localizer<T extends string = string> {
 					{
 						locale: result.locale,
 						data: result.value,
-						fallback: localeOrOptions.fallback,
+						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
 						args,
 					},
 					override
@@ -820,7 +806,7 @@ export default class Localizer<T extends string = string> {
 					{
 						locale: result.locale,
 						data: result.value,
-						fallback: localeOrOptions.fallback,
+						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
 						args,
 					},
 					{

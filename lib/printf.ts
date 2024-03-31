@@ -29,16 +29,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-import { get, has, isNil } from './no-lodash';
+import { get, has, isNil, isObjectLike } from './no-lodash';
 
 // --------------------
 
-export type Flag = '+' | '-' | '0' | '++' | '+-' | '+0';
-export type LiteralToken = {
+type Flag = '+' | '-' | '0' | '++' | '+-' | '+0';
+type LiteralToken = {
 	type: 'literal';
 	literal: string;
 };
-export type PlaceholderToken = {
+type PlaceholderToken = {
 	key: string | null;
 	flag: Flag | null;
 	position: number | null;
@@ -49,9 +49,9 @@ export type PlaceholderToken = {
 	placeholder: string;
 	type: 'placeholder';
 };
-export type Token = LiteralToken | PlaceholderToken;
-export type PrintfFunction = ((subject: string, values?: Record<string, any>, ...args: any[]) => string) & {
-	cache: Record<string, Token[]>;
+type Token = LiteralToken | PlaceholderToken;
+export type PrintfFunction = ((subject: string, ...args: any[]) => string) & {
+	cache: Record<string, any[]>;
 	useCache: boolean;
 };
 
@@ -60,6 +60,10 @@ export type PrintfFunction = ((subject: string, values?: Record<string, any>, ..
 const TOKEN_RULE =
 	/%(?:(?<position>\d+)\$|\((?<key>[^\(\)]+)\))?(?<flag>\+?[0\+\-])?(?<width>\d+)?(?:\.(?<precision>\d+))?(?<conversion>[%tTjsScCnNboiduxXeEf])|\\%/g;
 
+function parseArgv(args: any[]) {
+	if (args.length && isObjectLike(args[args.length - 1])) return [args[args.length - 1], args.slice()];
+	return [{}, args.slice()];
+}
 function padValue(value: string, width: number, flag: Flag | null): string {
 	switch (flag) {
 		case '+':
@@ -257,8 +261,13 @@ function convertPlaceholderToken(token: PlaceholderToken, boundValue: any, prese
 
 export function createPrintf(useCache: boolean = true): PrintfFunction {
 	const cache: Record<string, Token[]> = {};
-	const func = function printf(subject: string, values: Record<string, any> = {}, ...args: any[]): string {
+	const func = function printf(subject: string, ...rawArgs: any[]): string {
 		subject = String(subject);
+
+		if (!/%/.test(subject)) return subject;
+		let [values, args] = parseArgv(rawArgs);
+		if (!Object.keys(values).length && !args.length) return subject;
+
 		let tokens = func.useCache ? cache[subject] || (cache[subject] = tokenize(subject)) : tokenize(subject);
 		let result = '';
 		for (let token of tokens) {
