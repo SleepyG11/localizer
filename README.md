@@ -74,7 +74,7 @@ ln('ru-RU', 'cats', 1)  // -> 1 кот
 ln('ru-RU', 'cats', 2)  // -> 2 кота
 ln('ru-RU', 'cats', 5)  // -> 5 котов
 
-// Create scope with pre defined locale
+// Create scope with pre-defined locale
 const scope = localizer.scope('ru-RU')
 
 scope.l('hello')        // -> Привет мир!
@@ -85,9 +85,9 @@ scope.ln('cats', 2)     // -> 2 кота
 ### Localization table
 JSON object with key-value localization data for all locales.
 For each key, value can be:
-- String
-- Nested data
-- Object with specific keys usable for pluralization:
+- a string
+- nested data
+- object with specific keys usable for pluralization:
   - plural categories defined in [Unicode CLDR](https://cldr.unicode.org/index/cldr-spec/plural-rules)
     ```
     zero, one, two, few, many, other
@@ -96,17 +96,17 @@ For each key, value can be:
     - leading `!` invert interval
     - have priority over plural categories
     ```
-    [3]         Match number 3 only
-    [3,5]       Match all numbers between 3 and 5 (both inclusive)
-    (3,5)       Match all numbers between 3 and 5 (both exclusive)
-    [3,5)       Match all numbers between 3 (inclusive) and 5 (exclusive)
-    [3,]        Match all numbers bigger or equal 3
-    [,5)        Match all numbers less than 5
-    ![3]        Match all numbers except 3
-    ![3,5]      Match all numbers less than 3 or bigger than 5
+    [3]     Match number 3 only
+    [3,5]   Match all numbers between 3 and 5 (both inclusive)
+    (3,5)   Match all numbers between 3 and 5 (both exclusive)
+    [3,5)   Match all numbers between 3 (inclusive) and 5 (exclusive)
+    [3,]    Match all numbers bigger or equal 3
+    [,5)    Match all numbers less than 5
+    ![3]    Match all numbers except 3
+    ![3,5]  Match all numbers less than 3 or bigger than 5
     ```
 - `undefined` or `null` are **ignored**
--  Any other type will be converted to string
+-  any other type will be converted to string
 
 **Example**
 ```js
@@ -134,7 +134,7 @@ For each key, value can be:
 
 ### Fallbacks table
 Object with fallback locales for all locales.
-When localization data for initial locale not found, next that matches pattern in table (in order they present) will be used. Repeats until data will be found. 
+When localization data for initial locale not found, next that match pattern in table (in order they present) will be used. Repeats until data will be found. 
 `*` can be used as wildcard in patterns.
 
 **Example**
@@ -148,7 +148,8 @@ When localization data for initial locale not found, next that matches pattern i
 ```
 
 ### Plural Rules table
-Table that contains plural rules functions for locales.
+Object with plural rules functions for locales.
+
 Each function take 2 arguments:
 - `count` (*number*) - number to pluralize
 - `ordinal` (*boolean*) - use ordinal form (1st, 2nd, 3rd, etc.) instead of cardinal (1, 2, 3, etc.)
@@ -165,7 +166,7 @@ zero, one, two, few, many, other
         if (ordinal) return count === 2 ? 'two' : count === 1 ? 'one' : 'other'
         return count === 1 ? 'one' : 'other'
     },
-    // Using rules from `Intl.PluralRules` for custom locales.
+    // Using `Intl.PluralRules` for custom locales.
     // Not recommended.
     'russian': (count, ordinal = false) => {
         return new Intl.PluralRules('ru-RU', { 
@@ -183,10 +184,10 @@ const localizer = new Localizer()
 
 Constructor options (all *optional*):
 - `safe`: Should localize methods returns null instead of throw error when invalid arguments passed (default: `false`).
-- `intl`: Use [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) to resolve plural category (default: `false`).
+- `intl`: Use [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) to resolve plural categories (default: `false`).
 - `localization`: [Localization Table](#localization-table).
 - `fallbacks`: [Fallbacks Table](#fallbacks-table).
-- `pluralRules`: [Plural Rules Table](#plural-rules-table). Have priority over [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules).
+- `pluralRules`: [Plural Rules Table](#plural-rules-table). Has priority over [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules).
 - `defaultLocale`: Locale to use when data for all fallback locales not found (default: `null`).
 - `cacheLocalization`: Should cache localization data for all used keys (default: `true`).
 - `cachePluralRules`: Should cache plural rules functions for all used locales (default: `true`).
@@ -227,8 +228,8 @@ Can be taken from `Localizer.scope(locale)` method.
 const scope = localizer.scope('ru-RU')
 ```
 
-Scope have similar `l()` and `ln()` methods, except they automatically use locale, defined in constructor.
-All other options (like caching, fallbacks, etc.) inherit from `Localizer` class where was created.
+Scope have similar `l()` and `ln()` methods, except they automatically use locale defined in constructor.
+All other options (like caching, fallbacks, etc.) inherit from `Localizer` class where it was created.
 
 ## Localize methods
 ### `l()`
@@ -241,11 +242,11 @@ localizer.l(options, ...args)
 scope.l(options, ...args)
 ```
 
-Search process:
+Data search process:
 - Using `options.raw` or resolve data by using `locale` and `key`;
 - If data is string, it will be used;
-- If data is object, `one` or `other` form will be used;
-- If data has other type, it will be converted to string and used;
+- If data is object, `data.other` will be used instead;
+- If data has other type, it will be used as string;
 - If data is `null` or `undefined`, or key not found, it's ignored;
 - Process repeats for all fallback locales until some data will be found;
 - If nothing found, `options.fallback` or initial `key` returned instead.
@@ -270,7 +271,7 @@ const l = localizer.l
 
 // Basic usage:
 l('en-US', 'items.apple') // -> 'Red Apple'
-l('en-US', 'cats', "Nick's") // -> 'Nick's cats'
+l('en-US', 'cats') // -> '%s cats'
 
 // Options argument:
 l({
@@ -305,13 +306,13 @@ scope.ln(options, ...args)
 Search process:
 - Using `options.raw` or resolve data by using `locale` and `key`;
 - If data is string, it will be used;
-- If data is object, then will be used:
-  - First interval match;
-  - Or, plural rules will be applied to determine plural category:
+- If data is object, then:
+  - First interval match will be used;
+  - Or, plural rules will be applied to determine plural category to use:
     - Function from [Plural Rules Table](#plural-rules-table);
     - Or [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) if `localizer.intl = true`;
-    - Or, `other` form returned;
-- If data has other type, it will be converted to string and used;
+    - Or, `data.other` form will be used;
+- If data has other type, it will be used as string;
 - If data is `null` or `undefined`, or key not found, it's ignored;
 - Process repeats for all fallback locales until some data will be found;
 - If nothing found, `options.fallback` or initial `key` returned instead.
@@ -322,7 +323,7 @@ const localizer = new Localizer({
         'en-US': {
             'cats': {
                 '[3,5]': 'From 3 to 5 cats',
-                'one': '%s cat in %s',
+                'one': '%s cat',
                 'other': '%s cats',
             },
         },
@@ -333,7 +334,7 @@ const localizer = new Localizer({
 const ln = localizer.ln;
 
 // Basic usage:
-ln('en-US', 'cats', 1, 'my home') // -> '1 cat in my home'
+ln('en-US', 'cats', 1) // -> '1 cat in my home'
 ln('en-US', 'cats', 2) // -> '2 cats'
 ln('en-US', 'cats', 3) // -> 'From 3 to 5 cats'
 
@@ -357,7 +358,7 @@ l({
 }) // -> 2 Pineapples
 ```
 
-This method always prepend count to arguments list:
+`count` always prepended to arguments list:
 ```js
 ln({ raw: '%s', count: 10 }) // -> 10
 ```
@@ -371,6 +372,7 @@ const localizer = new Localizer({
     localization: {
         'en-US': { 
             hello: 'Hello, %s!',
+            cats: 'I have %s cats, and one of them called %s.',
         }
     }
 })
@@ -378,6 +380,9 @@ const l = localizer.l
 
 l('en-US', 'hello', 'Kitty') // -> Hello, Kitty!
 l({ raw: 'Goodbye, %S!' }, 'Kitty') // -> Goodbye, KITTY!
+
+ln('en-US', 'cats', 10, 'Kitty') // -> I have 10 cats, and one of them called Kitty.
+ln({ raw: 'I have %s %s.', count: 5 }, 'apples') // -> I have 5 apples.
 ```
 
 *In examples below,* `printf()` *function used instead of* `l()` *and* `ln()`*; insertion works identical for all of them.*
@@ -575,7 +580,7 @@ Some examples of complex but powerful patterns:
 printf('%2$+08.2f -> %1$+08.2f', 1.2345, -54.321) // -> '-0054.32 -> +0001.23'
 printf('#%+06X', 16753920) // -> '#FFA500', orange color in hex
 printf(
-    "I'm live in %(city)N with my %(animal.type)s %(animal.name)n. %(animal.pronounce.0)n %(animal.feeling)S this place.",
+    "I live in %(city)N with my %(animal.type)s %(animal.name)n. %(animal.pronounce.0)n %(animal.feeling)S this place.",
     {
         city: "new york",
         animal: {
@@ -585,7 +590,7 @@ printf(
             feeling: "love",
         },
     },
-) // -> "I'm live in New York with my cat Kitty. She LOVE this place."
+) // -> "I live in New York with my cat Kitty. She LOVE this place."
 ```
 
 ### No value

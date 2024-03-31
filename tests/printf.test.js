@@ -276,7 +276,7 @@ describe('Printf function', () => {
 
 			expect(
 				printf(
-					"I'm live in %(city)N with my %(animal.type)s %(animal.name)n. %(animal.pronounce.0)n %(animal.feeling)S this place.",
+					'I live in %(city)N with my %(animal.type)s %(animal.name)n. %(animal.pronounce.0)n %(animal.feeling)S this place.',
 					{
 						city: 'new york',
 						animal: {
@@ -287,7 +287,7 @@ describe('Printf function', () => {
 						},
 					}
 				)
-			).toBe("I'm live in New York with my cat Kitty. She LOVE this place.");
+			).toBe('I live in New York with my cat Kitty. She LOVE this place.');
 		});
 	});
 });
