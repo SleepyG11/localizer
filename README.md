@@ -35,7 +35,7 @@ npm install @sleepyg11/localizer --save
 // CommonJS
 const { default: Localizer } = require('@sleepyg11/localizer')
 // ESM
-import Localizer from '@sleepyg11/localizer';
+import Localizer from '@sleepyg11/localizer'
 
 const localizer = new Localizer({
     intl: true,
@@ -45,7 +45,7 @@ const localizer = new Localizer({
             'cats': {
                 'one': '%s cat',
                 'other': '%s cats',
-            }
+            },
         },
         'ru-RU': {
             'hello': 'Привет мир!',
@@ -53,14 +53,14 @@ const localizer = new Localizer({
                 'one': '%s кот',
                 'few': '%s кота',
                 'other': '%s котов',
-            }
-        }
-    }
+            },
+        },
+    },
 })
 
 // Assign localize functions to variables is fine
-const l = localizer.l;
-const ln = localizer.ln;
+const l = localizer.l
+const ln = localizer.ln
 
 // Get localization data by locale and key.
 l('en-US', 'hello');    // -> Hello world!
@@ -75,7 +75,7 @@ ln('ru-RU', 'cats', 2)  // -> 2 кота
 ln('ru-RU', 'cats', 5)  // -> 5 котов
 
 // Create scope with pre defined locale
-const scope = localizer.scope('ru-RU');
+const scope = localizer.scope('ru-RU')
 
 scope.l('hello')        // -> Привет мир!
 scope.ln('cats', 2)     // -> 2 кота
@@ -114,12 +114,12 @@ For each key, value can be:
     // Locale
     'en-US': {
         // String
-        hello: 'Hello world!'
+        hello: 'Hello world!',
 
         // Nested data
         food: {
             apple: 'Red Apple',
-        }
+        },
 
         // Specific keys
         cats: {
@@ -127,8 +127,8 @@ For each key, value can be:
             '(50,]': 'More than 50 cats',
             'one': '%s cat',
             'other': '%s cats',
-        }
-    }
+        },
+    },
 }
 ```
 
@@ -162,14 +162,14 @@ zero, one, two, few, many, other
 ```js
 {
     'en-US': (count, ordinal = false) => {
-        if (ordinal) return count === 2 ? 'two' : count === 1 ? 'one' : 'other';
-        return count === 1 ? 'one' : 'other';
+        if (ordinal) return count === 2 ? 'two' : count === 1 ? 'one' : 'other'
+        return count === 1 ? 'one' : 'other'
     },
     // Using rules from `Intl.PluralRules` for custom locales.
     // Not recommended.
     'russian': (count, ordinal = false) => {
         return new Intl.PluralRules('ru-RU', { 
-            type: ordinal ? 'ordinal' : 'cardinal'
+            type: ordinal ? 'ordinal' : 'cardinal',
         }).select(count)
     }
 }
@@ -178,7 +178,7 @@ zero, one, two, few, many, other
 ## `Localizer` class
 The main class that provide localization methods.
 ```js
-const localizer = new Localizer();
+const localizer = new Localizer()
 ```
 
 Constructor options (all *optional*):
@@ -214,17 +214,17 @@ const localizer = new Localizer({
 
 All options can be updated in any time:
 ```js
-localizer.intl = true;
-localizer.cacheFallbacks = false;
+localizer.intl = true
+localizer.cacheFallbacks = false
 localizer.localization = {
-    'en-US': {}
+    'en-US': {},
 }
 ```
 
 ## `LocalizerScope` class
 Can be taken from `Localizer.scope(locale)` method.
 ```js
-const scope = localizer.scope('ru-RU');
+const scope = localizer.scope('ru-RU')
 ```
 
 Scope have similar `l()` and `ln()` methods, except they automatically use locale, defined in constructor.
@@ -266,13 +266,13 @@ const localizer = new Localizer({
 })
 
 // Can be assigned to variable, will work fine.
-const l = localizer.l;
+const l = localizer.l
 
-// Basic usage
+// Basic usage:
 l('en-US', 'items.apple') // -> 'Red Apple'
 l('en-US', 'cats', "Nick's") // -> 'Nick's cats'
 
-// Options argument.
+// Options argument:
 l({
     locale: 'en-US',
     key: 'items.apple',
@@ -281,6 +281,8 @@ l({
     safe: true,
     cacheLocalization: false,
 }) // -> Red Apple
+
+// Raw data:
 l({
     raw: {
         one: 'One Pineapple',
@@ -322,28 +324,28 @@ const localizer = new Localizer({
                 '[3,5]': 'From 3 to 5 cats',
                 'one': '%s cat in %s',
                 'other': '%s cats',
-            }
+            },
         },
-    }
+    },
 })
 
 // Can be assigned to variable, will work fine.
 const ln = localizer.ln;
 
-// Basic usage: locale, path and count.
+// Basic usage:
 ln('en-US', 'cats', 1, 'my home') // -> '1 cat in my home'
 ln('en-US', 'cats', 2) // -> '2 cats'
 ln('en-US', 'cats', 3) // -> 'From 3 to 5 cats'
 
-// Options can be passed instead.
+// Options argument:
 l({
     locale: 'en-US',
     key: 'cats',
-    count: 1
-    ordinal: true // Use ordinal form instead of cardinal
+    count: 1,
+    ordinal: true, // Use ordinal form instead of cardinal
 }) // -> 1 cat
 
-// Use data directly.
+// Raw data:
 l({
     raw: {
         one: '%s Pineapple',
@@ -355,6 +357,11 @@ l({
 }) // -> 2 Pineapples
 ```
 
+This method always prepend count to arguments list:
+```js
+ln({ locale: 'en-US', key: 'cats' }, 'my home') // -> 1 cat in my home
+```
+
 ## Values insertion
 Localization data supports values insertion similar to [sprintf-js](https://www.npmjs.com/package/sprintf-js) does, with additional formatters which can be more useful for localization purposes.
 
@@ -364,9 +371,6 @@ const localizer = new Localizer({
     localization: {
         'en-US': { 
             hello: 'Hello, %s!',
-            cats: {
-                other: "%s cats in my %s"
-            }
         }
     }
 })
@@ -375,12 +379,7 @@ l('en-US', 'hello', 'Kitty') // -> Hello, Kitty!
 l({ raw: 'Goodbye, %S!' }, 'Kitty') // -> Goodbye, KITTY!
 ```
 
-[`ln()`](#ln) method always prepend count to arguments list:
-```js
-ln('en-US', 'cats', 2, 'my home') // -> 2 cats in my home
-```
-
-*In examples below,* `printf()` *function was used.*
+*In examples below,* `printf()` *function used instead of* `l()` *and* `ln()`*; insertion works identical for all of them.*
 ```js
 import { printf } from '@sleepyg11/localizer'
 ```
@@ -519,23 +518,23 @@ printf('%.1f', 13)        // -> 13.0
 
 ```js
 // Insert arguments in order they present
-printf('%s, %s and %s', 'One', 'Two', 'Three') // -> One, Two and Three
+printf('%s, %s and %s', 'One', 'Two', 'Three') // -> 'One, Two and Three'
 
 // Insert arguments in specific order
-printf('%2$s, %3$s and %1$s', 'One', 'Two', 'Three') // -> Two, Three and One
+printf('%2$s, %3$s and %1$s', 'One', 'Two', 'Three') // -> 'Two, Three and One'
 
 // Insert values from object
 printf(
     '%(first)s, %(second)s and %(third)s',
     { first: 'fish', second: 'cat', third: 'fox' }
-) // -> fish, cat and fox
+) // -> 'fish, cat and fox'
 
 // Combined
 printf(
     '%(first)s %s, %(second)s %s and %(third)s %s',
     'Fishcl', 'Kitty', 'Foxy',
     { first: 'fish', second: 'cat', third: 'fox' }
-) // -> fish Fishlc, cat Kitty and fox Foxy
+) // -> 'fish Fishlc, cat Kitty and fox Foxy'
 ```
 
 ### Pad values
@@ -572,8 +571,8 @@ printf('%+05s', -23)      // -> '-0023'
 ### Combined
 Some examples of complex but powerful patterns:
 ```js
-printf('%2$+08.2f -> %1$+08.2f', 1.2345, -54.321) // -> -0054.32 -> +0001.23
-printf('#%+06X', 16753920) // -> #FFA500, orange color in hex
+printf('%2$+08.2f -> %1$+08.2f', 1.2345, -54.321) // -> '-0054.32 -> +0001.23'
+printf('#%+06X', 16753920) // -> '#FFA500', orange color in hex
 printf(
     "I'm live in %(city)N with my %(animal.type)s %(animal.name)n. %(animal.pronounce.0)n %(animal.feeling)S this place.",
     {
@@ -583,9 +582,9 @@ printf(
             type: "cat",
             name: "kitty",
             feeling: "love",
-        }
-    }
-) // -> I'm live in New York with my cat Kitty. She LOVE this place.
+        },
+    },
+) // -> "I'm live in New York with my cat Kitty. She LOVE this place."
 ```
 
 ### No value
