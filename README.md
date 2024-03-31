@@ -309,7 +309,7 @@ Search process:
   - First interval match;
   - Or, plural rules will be applied to determine plural category:
     - Function from [Plural Rules Table](#plural-rules-table);
-    - Or [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) used if `localizer.intl = true`;
+    - Or [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) if `localizer.intl = true`;
     - Or, `other` form returned;
 - If data has other type, it will be converted to string and used;
 - If data is `null` or `undefined`, or key not found, it's ignored;

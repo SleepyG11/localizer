@@ -15,7 +15,7 @@
     },
     "name": "@sleepyg11/localizer",
     "version": "0.1.1",
-    "description": "Module for localization",
+    "description": "Module for localization with plural rules support.",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/SleepyG11/localizer.git"
