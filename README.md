@@ -341,9 +341,9 @@ ln('en-US', 'cats', 3) // -> 'From 3 to 5 cats'
 l({
     locale: 'en-US',
     key: 'cats',
-    count: 1,
+    count: 2,
     ordinal: true, // Use ordinal form instead of cardinal
-}) // -> 1 cat
+}) // -> 2 cats
 
 // Raw data:
 l({
@@ -359,7 +359,7 @@ l({
 
 This method always prepend count to arguments list:
 ```js
-ln({ locale: 'en-US', key: 'cats' }, 'my home') // -> 1 cat in my home
+ln({ raw: '%s', count: 10 }) // -> 10
 ```
 
 ## Values insertion
@@ -374,6 +374,7 @@ const localizer = new Localizer({
         }
     }
 })
+const l = localizer.l
 
 l('en-US', 'hello', 'Kitty') // -> Hello, Kitty!
 l({ raw: 'Goodbye, %S!' }, 'Kitty') // -> Goodbye, KITTY!
