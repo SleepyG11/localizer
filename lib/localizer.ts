@@ -281,17 +281,17 @@ export class LocalizerScope<T extends string = string> {
 				locale,
 			};
 			if (withCount && args.length) resultOptions.count = args.shift();
-			return [resultOptions, ...args];
+			return [resultOptions, args];
 		} else if (isObjectLike(keyOrOptions)) {
 			return [
 				{
 					locale,
 					...keyOrOptions,
 				},
-				...args,
+				args,
 			];
 		} else {
-			return [keyOrOptions, ...args];
+			return [keyOrOptions, args];
 		}
 	}
 
