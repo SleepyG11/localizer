@@ -347,7 +347,7 @@ export class LocalizerScope<T extends string = string> {
 		return this.localizer.scope(locale);
 	}
 }
-export class Localizer<T extends string = string> {
+export default class Localizer<T extends string = string> {
 	private _cacheLocalization: boolean;
 	private _cachePluralRules: boolean;
 	private _cacheFallbacks: boolean;
