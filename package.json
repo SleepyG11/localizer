@@ -14,7 +14,7 @@
         "test": "jest tests"
     },
     "name": "@sleepyg11/localizer",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "Module for localization with plural rules support.",
     "repository": {
         "type": "git",
