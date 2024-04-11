@@ -17,9 +17,9 @@ npm install @sleepyg11/localizer --save
   - [Plural Rules Table](#plural-rules-table)
 - [`Localizer` class](#localizer-class)
 - [`LocalizerScope` class](#localizerscope-class)
-- [Localize methods](#localize-methods)
-  - [`l()`](#l)
-  - [`ln()`](#ln)
+- [methods](#localize-methods)
+  - [`localize()`](#localize)
+  - [`pluralize()`](#pluralize)
 - [Values insertion](#values-insertion)
   - [Utility formatters](#utility-formatters)
   - [String formatters](#string-formatters)
@@ -59,26 +59,26 @@ const localizer = new Localizer({
 })
 
 // Assign localize functions to variables is fine
-const l = localizer.l
-const ln = localizer.ln
+const l = localizer.localize
+const ln = localizer.pluralize
 
 // Get localization data by locale and key.
-l('en-US', 'hello');    // -> Hello world!
-l('ru-RU', 'hello');    // -> Привет мир!
+localize('en-US', 'hello');    // -> Hello world!
+localize('ru-RU', 'hello');    // -> Привет мир!
 
 // Using plural rules
-ln('en-US', 'cats', 1)  // -> 1 cat
-ln('en-US', 'cats', 2)  // -> 2 cats
+pluralize('en-US', 'cats', 1)  // -> 1 cat
+pluralize('en-US', 'cats', 2)  // -> 2 cats
 
-ln('ru-RU', 'cats', 1)  // -> 1 кот
-ln('ru-RU', 'cats', 2)  // -> 2 кота
-ln('ru-RU', 'cats', 5)  // -> 5 котов
+pluralize('ru-RU', 'cats', 1)  // -> 1 кот
+pluralize('ru-RU', 'cats', 2)  // -> 2 кота
+pluralize('ru-RU', 'cats', 5)  // -> 5 котов
 
 // Create scope with pre-defined locale
 const scope = localizer.scope('ru-RU')
 
-scope.l('hello')        // -> Привет мир!
-scope.ln('cats', 2)     // -> 2 кота
+scope.localize('hello')        // -> Привет мир!
+scope.pluralize('cats', 2)     // -> 2 кота
 ```
 
 ## Main structures
@@ -195,7 +195,7 @@ Constructor options (all *optional*):
 - `cachePrintf`: Should use cache for patterns insertion (default: `true`).
 
 *All cache options increase localization speed for frequently used locales, keys and data.*
-*Each individual can be disabled, which reduce memory usage by cost of speed.*
+*Each individual can be disabled, which may reduce memory usage by cost of speed.*
 
 Using constructor without options equals to:
 ```js
@@ -228,28 +228,29 @@ Can be taken from `Localizer.scope(locale)` method.
 const scope = localizer.scope('ru-RU')
 ```
 
-Scope have similar `l()` and `ln()` methods, except they automatically use locale defined in constructor.
+Scope have similar `localize()` and `pluralize()` methods, except they automatically use locale defined in constructor.
 All other options (like caching, fallbacks, etc.) inherit from `Localizer` class where it was created.
 
-## Localize methods
-### `l()`
-Main function to resolve localization.
+## Methods
+### `localize()`
+Main method for data localization.
 ```ts
-localizer.l(locale: string, key: string, ...args)
-scope.l(key: string, ...args)
+localizer.localize(locale: string, key: string, ...args)
+scope.localize(key: string, ...args)
 // or
-localizer.l(options, ...args)
-scope.l(options, ...args)
+localizer.localize(options, ...args)
+scope.localize(options, ...args)
 ```
 
 Data search process:
-- Using `options.raw` or resolve data by using `locale` and `key`;
+- Using `options.raw` or resolve data by `locale` and `key`;
 - If data is string, it will be used;
 - If data is object, `data.other` will be used instead;
-- If data has other type, it will be used as string;
 - If data is `null` or `undefined`, or key not found, it's ignored;
 - Process repeats for all fallback locales until some data will be found;
 - If nothing found, `options.fallback` or initial `key` returned instead.
+
+Has alias: `localizer.l()`.
 
 ```js
 const localizer = new Localizer({
@@ -267,14 +268,14 @@ const localizer = new Localizer({
 })
 
 // Can be assigned to variable, will work fine.
-const l = localizer.l
+const localize = localizer.localize
 
 // Basic usage:
-l('en-US', 'items.apple') // -> 'Red Apple'
-l('en-US', 'cats') // -> '%s cats'
+localize('en-US', 'items.apple') // -> 'Red Apple'
+localize('en-US', 'cats') // -> '%s cats'
 
 // Options argument:
-l({
+localize({
     locale: 'en-US',
     key: 'items.apple',
 
@@ -284,7 +285,7 @@ l({
 }) // -> Red Apple
 
 // Raw data:
-l({
+localize({
     raw: {
         one: 'One Pineapple',
         other: 'A lot of Pineapples',
@@ -293,18 +294,18 @@ l({
 }) // -> One Pineapple
 ```
 
-### `ln()`
-Function to resolve localization with count argument and using plural rules.
+### `pluralize()`
+Pluralize data by using count argument and plural rules.
 ```ts
-localizer.ln(locale: string, key: string, count: number, ...args)
-scope.ln(key: string, count: number, ...args)
+localizer.pluralize(locale: string, key: string, count: number, ...args)
+scope.pluralize(key: string, count: number, ...args)
 // or
-localizer.ln(options, ...args)
-scope.ln(options, ...args)
+localizer.pluralize(options, ...args)
+scope.pluralize(options, ...args)
 ```
 
 Search process:
-- Using `options.raw` or resolve data by using `locale` and `key`;
+- Using `options.raw` or resolve data by `locale` and `key`;
 - If data is string, it will be used;
 - If data is object, then:
   - First interval match will be used;
@@ -316,6 +317,8 @@ Search process:
 - If data is `null` or `undefined`, or key not found, it's ignored;
 - Process repeats for all fallback locales until some data will be found;
 - If nothing found, `options.fallback` or initial `key` returned instead.
+
+Has aliases: `localizer.p()` and `localizer.ln()`.
 
 ```js
 const localizer = new Localizer({
@@ -331,15 +334,15 @@ const localizer = new Localizer({
 })
 
 // Can be assigned to variable, will work fine.
-const ln = localizer.ln;
+const pluralize = localizer.pluralize
 
 // Basic usage:
-ln('en-US', 'cats', 1) // -> '1 cat in my home'
-ln('en-US', 'cats', 2) // -> '2 cats'
-ln('en-US', 'cats', 3) // -> 'From 3 to 5 cats'
+pluralize('en-US', 'cats', 1) // -> '1 cat in my home'
+pluralize('en-US', 'cats', 2) // -> '2 cats'
+pluralize('en-US', 'cats', 3) // -> 'From 3 to 5 cats'
 
 // Options argument:
-l({
+pluralize({
     locale: 'en-US',
     key: 'cats',
     count: 2,
@@ -347,7 +350,7 @@ l({
 }) // -> 2 cats
 
 // Raw data:
-l({
+pluralize({
     raw: {
         one: '%s Pineapple',
         other: '%s Pineapples',
@@ -360,7 +363,7 @@ l({
 
 `count` always prepended to arguments list:
 ```js
-ln({ raw: '%s', count: 10 }) // -> 10
+pluralize({ raw: '%s', count: 10 }) // -> 10
 ```
 
 ## Values insertion
@@ -378,14 +381,14 @@ const localizer = new Localizer({
 })
 const l = localizer.l
 
-l('en-US', 'hello', 'Kitty') // -> Hello, Kitty!
-l({ raw: 'Goodbye, %S!' }, 'Kitty') // -> Goodbye, KITTY!
+localize('en-US', 'hello', 'Kitty') // -> Hello, Kitty!
+localize({ raw: 'Goodbye, %S!' }, 'Kitty') // -> Goodbye, KITTY!
 
-ln('en-US', 'cats', 10, 'Kitty') // -> I have 10 cats, and one of them called Kitty.
-ln({ raw: 'I have %s %s.', count: 5 }, 'apples') // -> I have 5 apples.
+pluralize('en-US', 'cats', 10, 'Kitty') // -> I have 10 cats, and one of them called Kitty.
+pluralize({ raw: 'I have %s %s.', count: 5 }, 'apples') // -> I have 5 apples.
 ```
 
-*In examples below,* `printf()` *function used instead of* `l()` *and* `ln()`*; insertion works identical for all of them.*
+*In examples below,* `printf()` *function used instead of* `localize()` *and* `pluralize()`*; insertion works identical for all of them.*
 ```js
 import { printf } from '@sleepyg11/localizer'
 ```

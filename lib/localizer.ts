@@ -126,20 +126,9 @@ type BasicOptions = {
 
 // ------------------------
 
-type LocalizeBasicOptions = Partial<BasicOptions>;
-type LocalizeBasicCountOptions = {
-	/**
-	 * Number that will be used for resolving math intervals or passed to {@link PluralRules} function.
-	 * @default 1
-	 */
-	count?: number;
-	/**
-	 * Use `ordinal` plural rules instead of `cardinal`.
-	 * @default false
-	 */
-	ordinal?: boolean;
-};
-type LocalizeBasicKeyOptions<T extends string = string> = LocalizeBasicOptions & {
+type OverrideOptions = Partial<BasicOptions>;
+
+type BasicKeyOptions<T extends string = string> = OverrideOptions & {
 	/**
 	 * Path to localization data inside of {@link LocalizationTable}.
 	 *
@@ -182,7 +171,7 @@ type LocalizeBasicKeyOptions<T extends string = string> = LocalizeBasicOptions &
 	 */
 	locale?: T;
 };
-type LocalizeBasicRawOptions<T extends string = string> = LocalizeBasicOptions & {
+type BasicRawOptions<T extends string = string> = OverrideOptions & {
 	/**
 	 * Localization data to process. See {@link LocalizationTable} for more info.
 	 */
@@ -199,11 +188,27 @@ type LocalizeBasicRawOptions<T extends string = string> = LocalizeBasicOptions &
 	locale?: T;
 };
 
-export type LocalizeWithoutCountKeyOptions<T extends string = string> = LocalizeBasicKeyOptions<T>;
-export type LocalizeWithoutCountRawOptions<T extends string = string> = Omit<LocalizeBasicRawOptions<T>, 'locale'>;
+type PluralizeBasicOptions = {
+	/**
+	 * Number that will be used for resolving math intervals or passed to {@link PluralRules} function.
+	 * @default 1
+	 */
+	count?: number;
+	/**
+	 * Use `ordinal` plural rules instead of `cardinal`.
+	 * @default false
+	 */
+	ordinal?: boolean;
+};
 
-export type LocalizeWithCountKeyOptions<T extends string = string> = LocalizeBasicKeyOptions<T> & LocalizeBasicCountOptions;
-export type LocalizeWithCountRawOptions<T extends string = string> = LocalizeBasicRawOptions<T> & LocalizeBasicCountOptions;
+export type LocalizeKeyOptions<T extends string = string> = BasicKeyOptions<T>;
+export type LocalizeRawOptions<T extends string = string> = Omit<BasicRawOptions<T>, 'locale'>;
+
+export type PluralizeKeyOptions<T extends string = string> = BasicKeyOptions<T> & PluralizeBasicOptions;
+export type PluralizeRawOptions<T extends string = string> = BasicRawOptions<T> & PluralizeBasicOptions;
+
+export type LocalizeAllKeyOptions<T extends string = string> = Omit<LocalizeKeyOptions<T>, 'locale' | 'fallback'>;
+export type PluralizeAllKeyOptions<T extends string = string> = Omit<PluralizeKeyOptions<T>, 'locale' | 'fallback'>;
 
 // ------------------------
 
@@ -295,32 +300,54 @@ export class LocalizerScope<T extends string = string> {
 		this.locale = locale;
 
 		let self = this;
-		this.l = (...args) => LocalizerScope.prototype.l.apply(self, args);
-		this.ln = (...args) => LocalizerScope.prototype.ln.apply(self, args);
+		this.localize = this.l = (...args) => LocalizerScope.prototype.localize.apply(self, args);
+		this.pluralize = this.p = this.ln = (...args) => LocalizerScope.prototype.pluralize.apply(self, args);
 		this.scope = (...args) => LocalizerScope.prototype.scope.apply(self, args);
+		this.localizeAll = this.localizer.localizeAll;
+		this.pluralizeAll = this.localizer.pluralizeAll;
+		this.hasLocale = this.localizer.hasLocale;
 	}
 
-	l(key: string, ...args: any[]): string;
-	l(options: LocalizeWithoutCountKeyOptions, ...args: any[]): string;
-	l(options: LocalizeWithCountRawOptions, ...args: any[]): string;
-	l(keyOrOptions: string | LocalizeWithoutCountKeyOptions | LocalizeWithoutCountRawOptions, ...args: any[]): string {
+	hasLocale: Localizer['hasLocale'];
+
+	localizeAll: Localizer['localizeAll'];
+	pluralizeAll: Localizer['pluralizeAll'];
+
+	localize(key: string, ...args: any[]): string;
+	localize(options: LocalizeKeyOptions, ...args: any[]): string;
+	localize(options: LocalizeRawOptions, ...args: any[]): string;
+	localize(keyOrOptions: string | LocalizeKeyOptions | LocalizeRawOptions, ...args: any[]): string {
 		let [resultOptions, resultArgs] = LocalizerScope.insertLocaleInOptions(this.locale, false, keyOrOptions, args);
 		return this.localizer.l(resultOptions, ...resultArgs);
 	}
 
-	ln(key: string, count?: number, ...args: any[]): string;
-	ln(options: LocalizeWithCountKeyOptions, ...args: any[]): string;
-	ln(options: LocalizeWithCountRawOptions, ...args: any[]): string;
-	ln(keyOrOptions: string | LocalizeWithCountKeyOptions | LocalizeWithCountRawOptions, ...args: any[]): string {
+	/**
+	 * Alias for {@link LocalizerScope.localize()}
+	 */
+	l: Localizer['localize'];
+
+	pluralize(key: string, count?: number, ...args: any[]): string;
+	pluralize(options: PluralizeKeyOptions, ...args: any[]): string;
+	pluralize(options: PluralizeRawOptions, ...args: any[]): string;
+	pluralize(keyOrOptions: string | PluralizeKeyOptions | PluralizeRawOptions, ...args: any[]): string {
 		let [resultOptions, resultArgs] = LocalizerScope.insertLocaleInOptions(this.locale, true, keyOrOptions, args);
 		return this.localizer.ln(resultOptions, ...resultArgs);
 	}
+
+	/**
+	 * Alias for {@link Localizer.pluralize()}
+	 */
+	p: LocalizerScope['pluralize'];
+	/**
+	 * Alias for {@link Localizer.pluralize()}
+	 */
+	ln: LocalizerScope['pluralize'];
 
 	scope(locale: T): LocalizerScope {
 		return this.localizer.scope(locale);
 	}
 }
-export default class Localizer<T extends string = string> {
+export class Localizer<T extends string = string> {
 	private _cacheLocalization: boolean;
 	private _cachePluralRules: boolean;
 	private _cacheFallbacks: boolean;
@@ -405,9 +432,13 @@ export default class Localizer<T extends string = string> {
 		Localizer.setFallbacksArray(this);
 
 		let self = this;
-		this.l = (...args) => Localizer.prototype.l.apply(self, args);
-		this.ln = (...args) => Localizer.prototype.ln.apply(self, args);
+
+		this.localize = this.l = (...args) => Localizer.prototype.localize.apply(self, args);
+		this.pluralize = this.p = this.ln = (...args) => Localizer.prototype.pluralize.apply(self, args);
+		this.localizeAll = (...args) => Localizer.prototype.localizeAll.apply(self, args);
+		this.pluralizeAll = (...args) => Localizer.prototype.pluralizeAll.apply(self, args);
 		this.scope = (...args) => Localizer.prototype.scope.apply(self, args);
+		this.hasLocale = (...args) => Localizer.prototype.hasLocale.apply(self, args);
 	}
 
 	/**
@@ -545,15 +576,6 @@ export default class Localizer<T extends string = string> {
 
 	// -----------------
 
-	/**
-	 * Check is locale present in {@link LocalizationTable}.
-	 */
-	hasLocale(locale: T): boolean {
-		return locale in this._localization;
-	}
-
-	// -----------------
-
 	private getOverrideOptions(options: any): ProcessOverrideOptions {
 		let result = {};
 		for (let key of ['safe', 'intl', 'cacheLocalization', 'cachePluralRules', 'cacheFallbacks', 'cachePrintf']) {
@@ -565,7 +587,12 @@ export default class Localizer<T extends string = string> {
 	private getKey(locale: T, key: string): CacheKey {
 		return (locale + '.' + key) as CacheKey;
 	}
-	private search(locale: T, key: string, override: ProcessOverrideOptions): { locale: T; value: LocalizationData | null } {
+	private search(
+		locale: T,
+		key: string,
+		override: ProcessOverrideOptions,
+		skipFallbacks: boolean = false
+	): { locale: T; value: LocalizationData | null } {
 		let isDefaultLocale = false;
 		// Input
 		if (typeof locale !== 'string') {
@@ -574,7 +601,8 @@ export default class Localizer<T extends string = string> {
 		}
 		let startKey = this.getKey(locale, key);
 		// Locale from cache
-		let resultLocale = (override.cacheFallbacks && !isDefaultLocale ? this._fallbacksCache.get(startKey) : null) ?? locale;
+		let resultLocale =
+			(!skipFallbacks && override.cacheFallbacks && !isDefaultLocale ? this._fallbacksCache.get(startKey) : null) ?? locale;
 		// If cache data present - return it
 		let resultKey = this.getKey(resultLocale, key);
 		if (override.cacheLocalization && this._localizationCache.has(resultKey))
@@ -591,7 +619,7 @@ export default class Localizer<T extends string = string> {
 				value: result,
 			};
 		}
-		if (!isDefaultLocale) {
+		if (!skipFallbacks && !isDefaultLocale) {
 			// Start fallback calculation
 			for (let pattern of this._fallbacksArray) {
 				if (pattern.regexp.test(resultLocale)) {
@@ -675,9 +703,9 @@ export default class Localizer<T extends string = string> {
 
 	private process(input: ProcessDataOptions<T>, override: ProcessOverrideOptions): string {
 		if (isObjectLike(input.data)) {
-			input.data = (input.data as LocalizationPluralData).one ?? (input.data as LocalizationPluralData).other;
+			input.data = (input.data as LocalizationPluralData).other;
 		}
-		if (isNil(input.data)) return String(input.fallback);
+		if (isNil(input.data)) return input.fallback;
 		return this.renderPrintf(String(input.data), input.args, override);
 	}
 	private processWithCount(input: ProcessDataOptions<T>, plural: ProcessPluralOptions, override: ProcessOverrideOptions): string {
@@ -699,16 +727,115 @@ export default class Localizer<T extends string = string> {
 				input.data = input.data[selector(plural.count)] ?? (input.data as LocalizationPluralData).other;
 			}
 		}
-		if (isNil(input.data)) return String(input.fallback);
+		if (isNil(input.data)) return input.fallback;
 		return this.renderPrintf(String(input.data), [plural.count, ...input.args], override);
 	}
 
 	// -----------------
 
-	l(locale: T, key: string, ...args: any[]): string;
-	l(options: LocalizeWithoutCountKeyOptions<T>, ...args: any[]): string;
-	l(options: LocalizeWithoutCountRawOptions<T>, ...args: any[]): string;
-	l(localeOrOptions: T | LocalizeWithoutCountKeyOptions<T> | LocalizeWithoutCountRawOptions<T>, ...args: any[]): string {
+	/**
+	 * Check is locale present in {@link LocalizationTable}.
+	 */
+	hasLocale(locale: T): boolean {
+		return locale in this._localization;
+	}
+
+	/**
+	 * Localize data for each locale in list. Fallback locales will NOT be used.
+	 */
+	localizeAll(locales: T[], key: string, ...args: any[]): Partial<Record<T, string | null>>;
+	localizeAll(locales: T[], options: LocalizeAllKeyOptions<T>, ...args: any[]): Partial<Record<T, string | null>>;
+	localizeAll(locales: T[], keyOrOptions: string | LocalizeAllKeyOptions<T>, ...args: any[]): Partial<Record<T, string | null>> {
+		let validLocales = new Set(locales.filter((locale) => typeof locale === 'string'));
+		let result: Partial<Record<T, string | null>> = {};
+		if (!validLocales.size) return result;
+
+		let override: ProcessOverrideOptions;
+		let resultKey: string;
+
+		if (typeof keyOrOptions === 'string') {
+			override = this.getOverrideOptions({});
+			resultKey = keyOrOptions;
+		} else if (isObjectLike(keyOrOptions)) {
+			override = this.getOverrideOptions(keyOrOptions);
+			resultKey = keyOrOptions.key;
+		}
+		if (typeof resultKey !== 'string') return result;
+
+		for (let locale of validLocales.values()) {
+			let data = this.search(locale, resultKey, override, true);
+			result[locale] = this.process(
+				{
+					locale,
+					data: data.value,
+					args,
+					fallback: null,
+				},
+				override
+			);
+		}
+		return result;
+	}
+
+	/**
+	 * Pluralize data for each locale in list. Fallback locales will NOT be used.
+	 */
+	pluralizeAll(locales: T[], key: string, count: number, ...args: any[]): Partial<Record<T, string | null>>;
+	pluralizeAll(locales: T[], options: PluralizeAllKeyOptions<T>, ...args: any[]): Partial<Record<T, string | null>>;
+	pluralizeAll(locales: T[], keyOrOptions: string | PluralizeAllKeyOptions<T>, ...args: any[]): Partial<Record<T, string | null>> {
+		let validLocales = new Set(locales.filter((locale) => typeof locale === 'string'));
+		let result: Partial<Record<T, string | null>> = {};
+		if (!validLocales.size) return result;
+
+		let override: ProcessOverrideOptions;
+		let resultKey: string;
+		let resultCount: number;
+		let resultOrdinal = false;
+
+		if (typeof keyOrOptions === 'string') {
+			override = this.getOverrideOptions({});
+			resultKey = keyOrOptions;
+			resultCount = args.shift();
+		} else if (isObjectLike(keyOrOptions)) {
+			override = this.getOverrideOptions(keyOrOptions);
+			resultKey = keyOrOptions.key;
+			resultCount = keyOrOptions.count;
+			resultOrdinal = Boolean(keyOrOptions.ordinal);
+		}
+		if (typeof resultKey !== 'string') return result;
+
+		for (let locale of validLocales.values()) {
+			let data = this.search(locale, resultKey, override, true);
+			result[locale] = this.processWithCount(
+				{
+					locale,
+					data: data.value,
+					args,
+					fallback: null,
+				},
+				{
+					count: resultCount ?? 1,
+					ordinal: resultOrdinal,
+				},
+				override
+			);
+		}
+		return result;
+	}
+
+	/**
+	 * Localize data.
+	 * - Using `options.raw` or resolve data by `locale` and `key`;
+	 * - If data is string, it will be used;
+	 * - If data is object, `data.other` will be used instead;
+	 * - If data is `null` or `undefined`, or key not found, it's ignored;
+	 * - Process repeats for all fallback locales until some data will be found;
+	 * - If nothing found, `options.fallback` or initial `key` returned instead.
+	 */
+	localize(locale: T, key: string, ...args: any[]): string;
+	localize(options: LocalizeKeyOptions<T>, ...args: any[]): string;
+	localize(options: LocalizeRawOptions<T>, ...args: any[]): string;
+	localize(localeOrOptions: T | LocalizeKeyOptions<T> | LocalizeRawOptions<T>, ...args: any[]): string {
 		let override: ProcessOverrideOptions;
 		if (typeof localeOrOptions === 'string') {
 			override = this.getOverrideOptions({});
@@ -733,7 +860,7 @@ export default class Localizer<T extends string = string> {
 						{
 							locale: null,
 							data: localeOrOptions.raw,
-							fallback: localeOrOptions.fallback,
+							fallback: String(localeOrOptions.fallback),
 							args,
 						},
 						override
@@ -744,7 +871,7 @@ export default class Localizer<T extends string = string> {
 					{
 						locale: result.locale,
 						data: result.value,
-						fallback: localeOrOptions.fallback ?? localeOrOptions.key,
+						fallback: String(localeOrOptions.fallback ?? localeOrOptions.key),
 						args,
 					},
 					override
@@ -758,10 +885,29 @@ export default class Localizer<T extends string = string> {
 		throw new Error('Cannot localize');
 	}
 
-	ln(locale: T, key: string, count: number, ...args: any[]): string;
-	ln(options: LocalizeWithCountKeyOptions<T>, ...args: any[]): string;
-	ln(options: LocalizeWithCountRawOptions<T>, ...args: any[]): string;
-	ln(localeOrOptions: T | LocalizeWithCountKeyOptions<T> | LocalizeWithCountRawOptions<T>, ...args: any[]): string {
+	/**
+	 * Alias for {@link Localizer.localize()}
+	 */
+	l: Localizer['localize'];
+
+	/**
+	 * Pluralize data by using count argument and plural rules.
+	 * - Using `options.raw` or resolve data by `locale` and `key`;
+	 * - If data is string, it will be used;
+	 * - If data is object, then:
+	 * - First interval match will be used;
+	 * - Or, plural rules will be applied to determine plural category to use:
+	 *     - Function from `localizer.pluralRules`
+	 *     - Or [Intl.PluralRules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules) if `localizer.intl = true`;
+	 *     - Or, `data.other` form will be used;
+	 * - If data is `null` or `undefined`, or key not found, it's ignored;
+	 * - Process repeats for all fallback locales until some data will be found;
+	 * - If nothing found, `options.fallback` or initial `key` returned instead.
+	 */
+	pluralize(locale: T, key: string, count: number, ...args: any[]): string;
+	pluralize(options: PluralizeKeyOptions<T>, ...args: any[]): string;
+	pluralize(options: PluralizeRawOptions<T>, ...args: any[]): string;
+	pluralize(localeOrOptions: T | PluralizeKeyOptions<T> | PluralizeRawOptions<T>, ...args: any[]): string {
 		let override: ProcessOverrideOptions;
 		if (typeof localeOrOptions === 'string') {
 			override = this.getOverrideOptions({});
@@ -823,6 +969,15 @@ export default class Localizer<T extends string = string> {
 		// TODO: Make it more useful
 		throw new Error('Cannot localize');
 	}
+
+	/**
+	 * Alias for {@link Localizer.pluralize()}
+	 */
+	p: Localizer['pluralize'];
+	/**
+	 * Alias for {@link Localizer.pluralize()}
+	 */
+	ln: Localizer['pluralize'];
 
 	scope(locale: T) {
 		return new LocalizerScope(this, locale);
