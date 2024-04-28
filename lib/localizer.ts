@@ -302,9 +302,11 @@ export class LocalizerScope<T extends string = string> {
 		let self = this;
 		this.localize = this.l = (...args) => LocalizerScope.prototype.localize.apply(self, args);
 		this.pluralize = this.p = this.ln = (...args) => LocalizerScope.prototype.pluralize.apply(self, args);
+		this.resolve = (...args) => LocalizerScope.prototype.resolve.apply(self, args);
 		this.scope = (...args) => LocalizerScope.prototype.scope.apply(self, args);
 		this.localizeAll = this.localizer.localizeAll;
 		this.pluralizeAll = this.localizer.pluralizeAll;
+		this.resolveAll = this.localizer.resolveAll;
 		this.hasLocale = this.localizer.hasLocale;
 	}
 
@@ -312,6 +314,11 @@ export class LocalizerScope<T extends string = string> {
 
 	localizeAll: Localizer['localizeAll'];
 	pluralizeAll: Localizer['pluralizeAll'];
+	resolveAll: Localizer['resolveAll'];
+
+	resolve(key: string): any {
+		return this.localizer.resolve(this.locale, key);
+	}
 
 	localize(key: string, ...args: any[]): string;
 	localize(options: LocalizeKeyOptions, ...args: any[]): string;
@@ -335,11 +342,11 @@ export class LocalizerScope<T extends string = string> {
 	}
 
 	/**
-	 * Alias for {@link Localizer.pluralize()}
+	 * Alias for {@link LocalizerScope.pluralize()}
 	 */
 	p: LocalizerScope['pluralize'];
 	/**
-	 * Alias for {@link Localizer.pluralize()}
+	 * Alias for {@link LocalizerScope.pluralize()}
 	 */
 	ln: LocalizerScope['pluralize'];
 
@@ -435,8 +442,10 @@ export default class Localizer<T extends string = string> {
 
 		this.localize = this.l = (...args) => Localizer.prototype.localize.apply(self, args);
 		this.pluralize = this.p = this.ln = (...args) => Localizer.prototype.pluralize.apply(self, args);
+		this.resolve = (...args) => Localizer.prototype.resolve.apply(self, args);
 		this.localizeAll = (...args) => Localizer.prototype.localizeAll.apply(self, args);
 		this.pluralizeAll = (...args) => Localizer.prototype.pluralizeAll.apply(self, args);
+		this.resolveAll = (...args) => Localizer.prototype.resolveAll.apply(self, args);
 		this.scope = (...args) => Localizer.prototype.scope.apply(self, args);
 		this.hasLocale = (...args) => Localizer.prototype.hasLocale.apply(self, args);
 	}
@@ -738,6 +747,26 @@ export default class Localizer<T extends string = string> {
 	 */
 	hasLocale(locale: T): boolean {
 		return locale in this._localization;
+	}
+
+	/**
+	 * Get raw data from localization table.
+	 */
+	resolve(locale: T, key: string): any {
+		return get(this._localization, `${locale}.${key}`, null);
+	}
+	/**
+	 * Get raw data from localization table for each locale in list.
+	 */
+	resolveAll(locales: T[], key: string): Partial<Record<T, any>> {
+		let validLocales = new Set(locales.filter((locale) => typeof locale === 'string'));
+		let result: Partial<Record<T, string | null>> = {};
+		if (!validLocales.size) return result;
+
+		for (let locale of validLocales.values()) {
+			result[locale] = this.resolve(locale, key);
+		}
+		return result;
 	}
 
 	/**
